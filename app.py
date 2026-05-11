@@ -4,14 +4,19 @@ import pandas as pd
 # Configuração da página
 st.set_page_config(page_title="Dashboard de Gestão", layout="wide")
 
-st.title("📊 Dashboard Executivo")
+st.title("📊 Dashboard Executivo - Whirlpool")
 
-# Função para carregar os dados tratando erros de CSV brasileiro
+# Função para carregar os dados tratando o formato de exportação do Excel/Google Sheets
 @st.cache_data
 def load_data():
-    # O encoding='latin1' e sep=None fazem o pandas descobrir se é vírgula ou ponto e vírgula sozinho
-    risco_df = pd.read_csv("gestao_risco.csv", sep=None, engine='python', encoding="latin1")
-    churn_df = pd.read_csv("churn.csv", sep=None, engine='python', encoding="latin1")
+    # Nomes dos arquivos conforme encontrados no seu ambiente
+    file_risco = "gestao.xlsx"
+    file_churn = "churn.xlsx"
+    
+    # Carregamento com tratamento de encoding e separador automático
+    risco_df = pd.read_csv(file_risco, sep=None, engine='python', encoding="latin1")
+    churn_df = pd.read_csv(file_churn, sep=None, engine='python', encoding="latin1")
+    
     return risco_df, churn_df
 
 try:
@@ -22,33 +27,57 @@ try:
 
     with tab_risco:
         st.header("Visão de Gestão de Risco")
-        # Colunas ajustadas para o que você pediu inicialmente
-        colunas_risco = ["cliente", "area reclamada", "sla", "temperatura do cliente", "status"]
         
-        # Filtra apenas as colunas que realmente existem no arquivo para não dar erro
-        colunas_existentes = [c for c in colunas_risco if c in df_risco.columns]
-        st.dataframe(df_risco[colunas_existentes], use_container_width=True)
+        # Mapeamento das colunas conforme sua planilha de Risco
+        # Original: areas reclamadas, sla, temperatura, cliente, status
+        mapping_risco = {
+            "Empresa (Obrigatório)": "Cliente",
+            "Área Primária Reclamada/Causadora do Risco": "Área Reclamada",
+            "Urgência de Resolução (Em comparação com outros casos, qual a prioridade?)": "SLA/Urgência",
+            "Grau de Risco Atual (Impacto Potencial: 5 = Perda Iminente)": "Temperatura",
+            "Status Atual da Tratativa": "Status"
+        }
+        
+        # Seleciona e renomeia para ficar mais limpo no Dashboard
+        df_risco_view = df_risco[list(mapping_risco.keys())].rename(columns=mapping_risco)
+        st.dataframe(df_risco_view, use_container_width=True)
 
     with tab_churn:
         st.header("Visão de Churn")
         
-        # Métricas principais baseadas no seu print
+        # Métricas principais baseadas na sua planilha de Churn
         c1, c2, c3 = st.columns(3)
         
-        if "Quantidade de cancelamentos" in df_churn.columns:
-            cancelados = df_churn["Quantidade de cancelamentos"].sum()
-            c1.metric("Total de Cancelamentos", f"{cancelados}")
-            
-        if "Quantidade de revertidos" in df_churn.columns:
-            revertidos = df_churn["Quantidade de revertidos"].sum()
-            c2.metric("Revertidos", f"{revertidos}")
+        total_cancelados = df_churn["Quantidade Total de Cancelamentos Solicitados"].sum()
+        total_revertidos = df_churn["Quant. Revertido"].sum()
+        
+        c1.metric("Total de Cancelamentos", f"{total_cancelados}")
+        c2.metric("Total Revertidos", f"{total_revertidos}")
+        
+        # Cálculo de percentual de reversão simples (exemplo)
+        if total_cancelados > 0:
+            perc = (total_revertidos / total_cancelados) * 100
+            c3.metric("% Reversão", f"{perc:.2f}%")
 
         st.divider()
         
-        # Mostra a tabela de Churn com os nomes exatos do seu print
-        st.subheader("Detalhamento por Empresa")
-        st.dataframe(df_churn, use_container_width=True)
+        # Mapeamento das colunas solicitadas para a tabela de Churn
+        mapping_churn = {
+            "Nome da Empresa": "Empresa",
+            "Quantidade Total de Contratos do Grupo": "Qtd Grupo",
+            "Quantidade Total de Cancelamentos Solicitados": "Cancelamentos",
+            "Quant. Revertido": "Revertidos",
+            "Franquia\n": "Churn por Franquia",
+            "Motivo Principal do Cancelamento\n": "Motivos",
+            "Status": "Status Final"
+        }
+        
+        st.subheader("Detalhamento de Churn por Empresa")
+        df_churn_view = df_churn[list(mapping_churn.keys())].rename(columns=mapping_churn)
+        st.dataframe(df_churn_view, use_container_width=True)
 
 except Exception as e:
-    st.error(f"Erro ao carregar os dados. Verifique se os arquivos CSV estão corretos.")
-    st.info(f"Detalhe do erro: {e}")
+    st.error(f"Erro ao carregar os dados. Verifique se os arquivos CSV estão com os nomes corretos no GitHub.")
+    st.info(f"Dica: Garanta que os arquivos no seu GitHub tenham exatamente os nomes: \n1. gestao.xlsx - respostas.csv \n2. churn.xlsx - Respostas.csv")
+    st.divider()
+    st.write("Detalhe técnico do erro:", e)
