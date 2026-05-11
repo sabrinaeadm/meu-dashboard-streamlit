@@ -6,11 +6,12 @@ st.set_page_config(page_title="Dashboard de Gestão", layout="wide")
 
 st.title("📊 Dashboard Executivo")
 
-# Carregamento dos dados (Substitua pelos nomes dos seus arquivos)
+# Função para carregar os dados tratando erros de CSV brasileiro
 @st.cache_data
 def load_data():
-    risco_df = pd.read_csv("gestao_risco.csv")
-    churn_df = pd.read_csv("churn.csv")
+    # O encoding='latin1' e sep=None fazem o pandas descobrir se é vírgula ou ponto e vírgula sozinho
+    risco_df = pd.read_csv("gestao_risco.csv", sep=None, engine='python', encoding="latin1")
+    churn_df = pd.read_csv("churn.csv", sep=None, engine='python', encoding="latin1")
     return risco_df, churn_df
 
 try:
@@ -21,25 +22,33 @@ try:
 
     with tab_risco:
         st.header("Visão de Gestão de Risco")
-        # Colunas solicitadas: Área, SLA, Temperatura, Cliente e Status
-        colunas_risco = ["cliente", "area_reclamada", "sla", "temperatura", "status"]
-        st.dataframe(df_risco[colunas_risco], use_container_width=True)
+        # Colunas ajustadas para o que você pediu inicialmente
+        colunas_risco = ["cliente", "area reclamada", "sla", "temperatura do cliente", "status"]
         
-        # Exemplo de métrica rápida
-        st.metric("Clientes em Risco Crítico", len(df_risco[df_risco['temperatura'] == 'Alta']))
+        # Filtra apenas as colunas que realmente existem no arquivo para não dar erro
+        colunas_existentes = [c for c in colunas_risco if c in df_risco.columns]
+        st.dataframe(df_risco[colunas_existentes], use_container_width=True)
 
     with tab_churn:
         st.header("Visão de Churn")
-        # Colunas solicitadas: Empresa, Qtd Grupo, Cancelamentos, Revertidos, Churn/Franquia, Motivos, %
-        st.subheader("Indicadores Gerais")
         
-        # Exemplo de exibição de métricas calculadas
+        # Métricas principais baseadas no seu print
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total de Cancelamentos", df_churn["cancelamentos"].sum())
-        c2.metric("Revertidos", df_churn["revertidos"].sum())
         
+        if "Quantidade de cancelamentos" in df_churn.columns:
+            cancelados = df_churn["Quantidade de cancelamentos"].sum()
+            c1.metric("Total de Cancelamentos", f"{cancelados}")
+            
+        if "Quantidade de revertidos" in df_churn.columns:
+            revertidos = df_churn["Quantidade de revertidos"].sum()
+            c2.metric("Revertidos", f"{revertidos}")
+
         st.divider()
+        
+        # Mostra a tabela de Churn com os nomes exatos do seu print
+        st.subheader("Detalhamento por Empresa")
         st.dataframe(df_churn, use_container_width=True)
 
-except FileNotFoundError:
-    st.error("Certifique-se de que os arquivos 'gestao_risco.csv' e 'churn.csv' estão na mesma pasta do código.")
+except Exception as e:
+    st.error(f"Erro ao carregar os dados. Verifique se os arquivos CSV estão corretos.")
+    st.info(f"Detalhe do erro: {e}")
