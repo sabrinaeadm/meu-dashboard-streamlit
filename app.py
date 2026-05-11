@@ -1,65 +1,107 @@
 import streamlit as st
 import pandas as pd
 
-# Configuração da página
-st.set_page_config(page_title="Dashboard de Gestão", layout="wide")
+# CONFIGURAÇÃO DA PÁGINA
+st.set_page_config(
+    page_title="Dashboard Executivo",
+    layout="wide"
+)
 
 st.title("📊 Dashboard Executivo - Whirlpool")
 
-# Função para carregar os dados tratando o formato de exportação do Excel/Google Sheets
+
+# =========================
+# CARREGAMENTO DOS DADOS
+# =========================
 @st.cache_data
 def load_data():
-    # Nomes dos arquivos
+
     file_risco = "gestao.xlsx"
     file_churn = "churn.xlsx"
-    
-    # Leitura dos arquivos
-    risco_df = pd.read_csv(file_risco, sep=None, engine='python', encoding="latin1")
-    churn_df = pd.read_csv(file_churn, sep=None, engine='python', encoding="latin1")
-    
-    return risco_df, churn_df
+
+    # LEITURA DOS EXCELS
+    df_risco = pd.read_excel(file_risco, engine="openpyxl")
+    df_churn = pd.read_excel(file_churn, engine="openpyxl")
+
+    return df_risco, df_churn
+
 
 try:
+
     df_risco, df_churn = load_data()
 
-    # Criação das abas
-    tab_risco, tab_churn = st.tabs(["⚠️ Gestão de Risco", "📉 Análise de Churn"])
+    # ABAS
+    tab1, tab2 = st.tabs(
+        ["⚠️ Gestão de Risco", "📉 Churn"]
+    )
 
-    # =========================
-    # ABA GESTÃO DE RISCO
-    # =========================
-    with tab_risco:
-        st.header("Visão de Gestão de Risco")
-        
+    # ==================================================
+    # ABA RISCO
+    # ==================================================
+    with tab1:
+
+        st.subheader("Gestão de Risco")
+
         mapping_risco = {
             "Empresa (Obrigatório)": "Cliente",
-            "Área Primária Reclamada/Causadora do Risco": "Área Reclamada",
-            "Urgência de Resolução (Em comparação com outros casos, qual a prioridade?)": "SLA/Urgência",
+            "Área Primária Reclamada/Causadora do Risco": "Área",
+            "Urgência de Resolução (Em comparação com outros casos, qual a prioridade?)": "Urgência",
             "Grau de Risco Atual (Impacto Potencial: 5 = Perda Iminente)": "Temperatura",
             "Status Atual da Tratativa": "Status"
         }
 
-        df_risco_view = df_risco[list(mapping_risco.keys())].rename(columns=mapping_risco)
+        colunas_risco = [
+            c for c in mapping_risco.keys()
+            if c in df_risco.columns
+        ]
 
-        st.dataframe(df_risco_view, use_container_width=True)
+        risco_view = df_risco[colunas_risco].rename(
+            columns=mapping_risco
+        )
 
-    # =========================
+        st.dataframe(
+            risco_view,
+            use_container_width=True
+        )
+
+    # ==================================================
     # ABA CHURN
-    # =========================
-    with tab_churn:
-        st.header("Visão de Churn")
-        
+    # ==================================================
+    with tab2:
+
+        st.subheader("Análise de Churn")
+
         c1, c2, c3 = st.columns(3)
 
-        total_cancelados = df_churn["Quantidade Total de Cancelamentos Solicitados"].sum()
-        total_revertidos = df_churn["Quant. Revertido"].sum()
+        total_cancelamentos = df_churn[
+            "Quantidade Total de Cancelamentos Solicitados"
+        ].sum()
 
-        c1.metric("Total de Cancelamentos", f"{total_cancelados}")
-        c2.metric("Total Revertidos", f"{total_revertidos}")
+        total_revertidos = df_churn[
+            "Quant. Revertido"
+        ].sum()
 
-        if total_cancelados > 0:
-            perc = (total_revertidos / total_cancelados) * 100
-            c3.metric("% Reversão", f"{perc:.2f}%")
+        percentual = 0
+
+        if total_cancelamentos > 0:
+            percentual = (
+                total_revertidos / total_cancelamentos
+            ) * 100
+
+        c1.metric(
+            "Cancelamentos",
+            int(total_cancelamentos)
+        )
+
+        c2.metric(
+            "Revertidos",
+            int(total_revertidos)
+        )
+
+        c3.metric(
+            "% Reversão",
+            f"{percentual:.2f}%"
+        )
 
         st.divider()
 
@@ -68,24 +110,27 @@ try:
             "Quantidade Total de Contratos do Grupo": "Qtd Grupo",
             "Quantidade Total de Cancelamentos Solicitados": "Cancelamentos",
             "Quant. Revertido": "Revertidos",
-            "Franquia\n": "Churn por Franquia",
-            "Motivo Principal do Cancelamento\n": "Motivos",
-            "Status": "Status Final"
+            "Franquia": "Franquia",
+            "Motivo Principal do Cancelamento": "Motivo",
+            "Status": "Status"
         }
 
-        st.subheader("Detalhamento de Churn por Empresa")
+        colunas_churn = [
+            c for c in mapping_churn.keys()
+            if c in df_churn.columns
+        ]
 
-        df_churn_view = df_churn[list(mapping_churn.keys())].rename(columns=mapping_churn)
+        churn_view = df_churn[colunas_churn].rename(
+            columns=mapping_churn
+        )
 
-        st.dataframe(df_churn_view, use_container_width=True)
+        st.dataframe(
+            churn_view,
+            use_container_width=True
+        )
 
 except Exception as e:
-    st.error("Erro ao carregar os dados. Verifique se os arquivos estão corretos.")
-    st.info(
-        "Garanta que os arquivos estejam na mesma pasta do app.py com os nomes:\n"
-        "1. gestao.xlsx\n"
-        "2. churn.xlsx"
-    )
 
-    st.divider()
-    st.write("Detalhe técnico do erro:", e)
+    st.error("Erro ao executar aplicação")
+
+    st.write(e)
