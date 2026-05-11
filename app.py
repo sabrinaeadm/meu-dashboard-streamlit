@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📊 Dashboard Executivo - Whirlpool")
+st.title("📊 Dashboard Executivo - Culligan")
 
 
 # ==========================================
