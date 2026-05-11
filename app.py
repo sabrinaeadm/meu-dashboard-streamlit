@@ -11,6 +11,26 @@ st.set_page_config(
 
 st.title("📊 Dashboard Executivo - Whirlpool")
 
+
+# ==========================================
+# FUNÇÃO FLEXÍVEL DE LEITURA
+# ==========================================
+def read_file(file):
+
+    try:
+        # tenta excel
+        return pd.read_excel(file, engine="openpyxl")
+
+    except:
+        # tenta csv
+        return pd.read_csv(
+            file,
+            sep=None,
+            engine="python",
+            encoding="latin1"
+        )
+
+
 # ==========================================
 # CARREGAMENTO DOS DADOS
 # ==========================================
@@ -20,8 +40,8 @@ def load_data():
     file_risco = "gestao.xlsx"
     file_churn = "churn.xlsx"
 
-    df_risco = pd.read_excel(file_risco, engine="openpyxl")
-    df_churn = pd.read_excel(file_churn, engine="openpyxl")
+    df_risco = read_file(file_risco)
+    df_churn = read_file(file_churn)
 
     return df_risco, df_churn
 
@@ -38,7 +58,7 @@ try:
     )
 
     # ==========================================
-    # ABA GESTÃO DE RISCO
+    # ABA RISCO
     # ==========================================
     with tab1:
 
@@ -61,9 +81,7 @@ try:
             columns=mapping_risco
         )
 
-        # ==========================
         # KPIs
-        # ==========================
         c1, c2, c3 = st.columns(3)
 
         c1.metric(
@@ -85,12 +103,9 @@ try:
 
         st.divider()
 
-        # ==========================
         # GRÁFICOS
-        # ==========================
         col1, col2 = st.columns(2)
 
-        # Gráfico Área Reclamada
         with col1:
 
             st.markdown("### 📌 Riscos por Área")
@@ -104,7 +119,6 @@ try:
 
                 st.bar_chart(grafico_area)
 
-        # Gráfico Status
         with col2:
 
             st.markdown("### 📌 Status das Tratativas")
@@ -119,8 +133,6 @@ try:
                 st.bar_chart(grafico_status)
 
         st.divider()
-
-        st.markdown("### 📋 Base Completa")
 
         st.dataframe(
             risco_view,
@@ -187,12 +199,9 @@ try:
             columns=mapping_churn
         )
 
-        # ==========================================
-        # GRÁFICOS CHURN
-        # ==========================================
+        # GRÁFICOS
         col3, col4 = st.columns(2)
 
-        # Motivos
         with col3:
 
             st.markdown("### 📌 Motivos de Cancelamento")
@@ -207,7 +216,6 @@ try:
 
                 st.bar_chart(grafico_motivo)
 
-        # Franquia
         with col4:
 
             st.markdown("### 📌 Churn por Franquia")
@@ -223,8 +231,6 @@ try:
                 st.bar_chart(grafico_franquia)
 
         st.divider()
-
-        st.markdown("### 📋 Base Completa")
 
         st.dataframe(
             churn_view,
