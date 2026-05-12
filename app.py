@@ -147,29 +147,110 @@ try:
     # ==========================================
     # ABA CHURN
     # ==========================================
-    with tab2:
+   with tab2:
 
-        st.subheader("Análise de Churn")
+    st.subheader("Análise de Churn")
 
-        mapping_churn = {
-            "Nome da Empresa": "Empresa",
-            "Quantidade Total de Contratos do Grupo": "Qtd Grupo",
-            "Quantidade Total de Cancelamentos Solicitados": "Cancelamentos",
-            "Quant. Revertido": "Revertidos",
-            "Franquia": "Franquia",
-            "Motivo Principal do Cancelamento": "Motivo",
-            "Status": "Status",
-            "Ano": "Ano",
-            "Mês": "Mes"
-        }
+    mapping_churn = {
+        "Nome da Empresa": "Empresa",
+        "Quantidade Total de Cancelamentos Solicitados": "Cancelamentos",
+        "Quant. Revertido": "Revertidos",
+        "Franquia": "Franquia",
+        "Motivo Principal do Cancelamento": "Motivo",
+        "Ano": "Ano",
+        "Mês": "Mes"
+    }
 
-        colunas_churn = [
-            c for c in mapping_churn.keys()
-            if c in df_churn.columns
-        ]
+    colunas_churn = [
+        c for c in mapping_churn.keys()
+        if c in df_churn.columns
+    ]
 
-        churn_view = df_churn[colunas_churn].rename(
-            columns=mapping_churn
+    churn_view = df_churn[colunas_churn].rename(
+        columns=mapping_churn
+    )
+
+    # ==========================================
+    # FILTROS
+    # ==========================================
+    st.markdown("## 🔎 Filtros")
+
+    f1, f2, f3, f4 = st.columns(4)
+
+    # FRANQUIA
+    with f1:
+
+        franquias = []
+
+        if "Franquia" in churn_view.columns:
+
+            franquias = sorted(
+                churn_view["Franquia"]
+                .dropna()
+                .astype(str)
+                .unique()
+            )
+
+        filtro_franquia = st.multiselect(
+            "Franquia",
+            franquias
+        )
+
+    # MOTIVO
+    with f2:
+
+        motivos = []
+
+        if "Motivo" in churn_view.columns:
+
+            motivos = sorted(
+                churn_view["Motivo"]
+                .dropna()
+                .astype(str)
+                .unique()
+            )
+
+        filtro_motivo = st.multiselect(
+            "Motivo",
+            motivos
+        )
+
+    # ANO
+    with f3:
+
+        anos = []
+
+        if "Ano" in churn_view.columns:
+
+            anos = sorted(
+                churn_view["Ano"]
+                .dropna()
+                .astype(str)
+                .unique()
+            )
+
+        filtro_ano = st.multiselect(
+            "Ano",
+            anos
+        )
+
+    # MÊS
+    with f4:
+
+        meses = []
+
+        if "Mes" in churn_view.columns:
+
+            meses = sorted(
+                churn_view["Mes"]
+                .dropna()
+                .astype(str)
+                .unique()
+            )
+
+        filtro_mes = st.multiselect(
+            "Mês",
+            meses
         )
 
        # ==========================================
