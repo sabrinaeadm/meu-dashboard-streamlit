@@ -13,38 +13,45 @@ st.title("📊 Dashboard Executivo - Whirlpool")
 
 
 # =====================================================
-# FUNÇÃO FLEXÍVEL DE LEITURA
+# FUNÇÃO LEITURA
 # =====================================================
 def read_file(file):
 
     try:
-        return pd.read_excel(
+        df = pd.read_excel(
             file,
             engine="openpyxl"
         )
 
     except:
-        return pd.read_csv(
+        df = pd.read_csv(
             file,
             sep=None,
             engine="python",
             encoding="latin1"
         )
 
+    # LIMPA NOMES DAS COLUNAS
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.replace("\n", "", regex=False)
+        .str.replace("\r", "", regex=False)
+    )
+
+    return df
+
 
 # =====================================================
-# CARREGAMENTO DOS DADOS
+# LOAD DOS DADOS
 # =====================================================
 @st.cache_data
 def load_data():
 
-    file_risco = "gestao.xlsx"
-    file_churn = "churn.xlsx"
+    risco = read_file("gestao.xlsx")
+    churn = read_file("churn.xlsx")
 
-    df_risco = read_file(file_risco)
-    df_churn = read_file(file_churn)
-
-    return df_risco, df_churn
+    return risco, churn
 
 
 try:
@@ -60,7 +67,7 @@ try:
     ])
 
     # =====================================================
-    # ABA GESTÃO DE RISCO
+    # ABA RISCO
     # =====================================================
     with tab1:
 
@@ -92,12 +99,14 @@ try:
         )
 
         if "Cliente" in risco_view.columns:
+
             c2.metric(
                 "Clientes Impactados",
                 risco_view["Cliente"].nunique()
             )
 
         if "Área" in risco_view.columns:
+
             c3.metric(
                 "Áreas Envolvidas",
                 risco_view["Área"].nunique()
@@ -148,114 +157,68 @@ try:
 
         st.subheader("Análise de Churn")
 
-        mapping_churn = {
-            "Nome da Empresa": "Empresa",
-            "Quantidade Total de Contratos do Grupo": "Qtd Grupo",
-            "Quantidade Total de Cancelamentos Solicitados": "Cancelamentos",
-            "Quant. Revertido": "Revertidos",
-            "Franquia": "Franquia",
-            "Motivo Principal do Cancelamento": "Motivo",
-            "Status": "Status",
-            "Ano": "Ano",
-            "Mês": "Mes"
-        }
-
-        colunas_churn = [
-            c for c in mapping_churn.keys()
-            if c in df_churn.columns
-        ]
-
-        churn_view = df_churn[colunas_churn].rename(
-            columns=mapping_churn
-        )
-
         # =====================================================
         # FILTROS
         # =====================================================
         st.markdown("## 🔎 Filtros")
 
-        f1, f2, f3, f4 = st.columns(4)
+        f1, f2, f3 = st.columns(3)
 
+        # ==========================================
         # FRANQUIA
+        # ==========================================
         with f1:
 
-            franquias = []
-
-            if "Franquia" in churn_view.columns:
-
-                franquias = sorted(
-                    churn_view["Franquia"]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                )
+            franquias = sorted(
+                df_churn["Franquia"]
+                .dropna()
+                .astype(str)
+                .unique()
+            )
 
             filtro_franquia = st.multiselect(
                 "Franquia",
                 franquias
             )
 
+        # ==========================================
         # MOTIVO
+        # ==========================================
         with f2:
 
-            motivos = []
-
-            if "Motivo" in churn_view.columns:
-
-                motivos = sorted(
-                    churn_view["Motivo"]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                )
+            motivos = sorted(
+                df_churn["Motivo Principal do Cancelamento"]
+                .dropna()
+                .astype(str)
+                .unique()
+            )
 
             filtro_motivo = st.multiselect(
-                "Motivo",
+                "Motivo Principal do Cancelamento",
                 motivos
             )
 
-        # ANO
+        # ==========================================
+        # STATUS
+        # ==========================================
         with f3:
 
-            anos = []
-
-            if "Ano" in churn_view.columns:
-
-                anos = sorted(
-                    churn_view["Ano"]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                )
-
-            filtro_ano = st.multiselect(
-                "Ano",
-                anos
+            status_lista = sorted(
+                df_churn["Status"]
+                .dropna()
+                .astype(str)
+                .unique()
             )
 
-        # MÊS
-        with f4:
-
-            meses = []
-
-            if "Mes" in churn_view.columns:
-
-                meses = sorted(
-                    churn_view["Mes"]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                )
-
-            filtro_mes = st.multiselect(
-                "Mês",
-                meses
+            filtro_status = st.multiselect(
+                "Status",
+                status_lista
             )
 
         # =====================================================
         # APLICAÇÃO DOS FILTROS
         # =====================================================
-        churn_filtrado = churn_view.copy()
+        churn_filtrado = df_churn.copy()
 
         if filtro_franquia:
 
@@ -268,25 +231,19 @@ try:
         if filtro_motivo:
 
             churn_filtrado = churn_filtrado[
-                churn_filtrado["Motivo"]
+                churn_filtrado[
+                    "Motivo Principal do Cancelamento"
+                ]
                 .astype(str)
                 .isin(filtro_motivo)
             ]
 
-        if filtro_ano:
+        if filtro_status:
 
             churn_filtrado = churn_filtrado[
-                churn_filtrado["Ano"]
+                churn_filtrado["Status"]
                 .astype(str)
-                .isin(filtro_ano)
-            ]
-
-        if filtro_mes:
-
-            churn_filtrado = churn_filtrado[
-                churn_filtrado["Mes"]
-                .astype(str)
-                .isin(filtro_mes)
+                .isin(filtro_status)
             ]
 
         # =====================================================
@@ -295,11 +252,11 @@ try:
         c1, c2, c3 = st.columns(3)
 
         total_cancelamentos = churn_filtrado[
-            "Cancelamentos"
+            "Quantidade Total de Cancelamentos Solicitados"
         ].sum()
 
         total_revertidos = churn_filtrado[
-            "Revertidos"
+            "Quant. Revertido"
         ].sum()
 
         percentual = 0
@@ -338,15 +295,15 @@ try:
                 "### 📌 Motivos de Cancelamento"
             )
 
-            if "Motivo" in churn_filtrado.columns:
+            grafico_motivo = (
+                churn_filtrado[
+                    "Motivo Principal do Cancelamento"
+                ]
+                .value_counts()
+                .head(10)
+            )
 
-                grafico_motivo = (
-                    churn_filtrado["Motivo"]
-                    .value_counts()
-                    .head(10)
-                )
-
-                st.bar_chart(grafico_motivo)
+            st.bar_chart(grafico_motivo)
 
         with col4:
 
@@ -354,15 +311,13 @@ try:
                 "### 📌 Churn por Franquia"
             )
 
-            if "Franquia" in churn_filtrado.columns:
+            grafico_franquia = (
+                churn_filtrado["Franquia"]
+                .value_counts()
+                .head(10)
+            )
 
-                grafico_franquia = (
-                    churn_filtrado["Franquia"]
-                    .value_counts()
-                    .head(10)
-                )
-
-                st.bar_chart(grafico_franquia)
+            st.bar_chart(grafico_franquia)
 
         st.divider()
 
