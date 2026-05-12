@@ -172,58 +172,121 @@ try:
             columns=mapping_churn
         )
 
-        # ==========================================
-        # FILTROS
-        # ==========================================
-        st.sidebar.header("Filtros Churn")
+       # ==========================================
+# FILTROS
+# ==========================================
+st.markdown("## 🔎 Filtros")
 
-        # FRANQUIA
+f1, f2, f3, f4 = st.columns(4)
+
+# FRANQUIA
+with f1:
+
+    franquias = []
+
+    if "Franquia" in churn_view.columns:
+
         franquias = sorted(
             churn_view["Franquia"]
             .dropna()
+            .astype(str)
             .unique()
-        ) if "Franquia" in churn_view.columns else []
-
-        filtro_franquia = st.sidebar.multiselect(
-            "Franquia",
-            franquias
         )
 
-        # MOTIVO
+    filtro_franquia = st.multiselect(
+        "Franquia",
+        franquias
+    )
+
+# MOTIVO
+with f2:
+
+    motivos = []
+
+    if "Motivo" in churn_view.columns:
+
         motivos = sorted(
             churn_view["Motivo"]
             .dropna()
+            .astype(str)
             .unique()
-        ) if "Motivo" in churn_view.columns else []
-
-        filtro_motivo = st.sidebar.multiselect(
-            "Motivo",
-            motivos
         )
 
-        # ANO
+    filtro_motivo = st.multiselect(
+        "Motivo",
+        motivos
+    )
+
+# ANO
+with f3:
+
+    anos = []
+
+    if "Ano" in churn_view.columns:
+
         anos = sorted(
             churn_view["Ano"]
             .dropna()
+            .astype(str)
             .unique()
-        ) if "Ano" in churn_view.columns else []
-
-        filtro_ano = st.sidebar.multiselect(
-            "Ano",
-            anos
         )
 
-        # MES
+    filtro_ano = st.multiselect(
+        "Ano",
+        anos
+    )
+
+# MÊS
+with f4:
+
+    meses = []
+
+    if "Mes" in churn_view.columns:
+
         meses = sorted(
             churn_view["Mes"]
             .dropna()
+            .astype(str)
             .unique()
-        ) if "Mes" in churn_view.columns else []
-
-        filtro_mes = st.sidebar.multiselect(
-            "Mês",
-            meses
         )
+
+    filtro_mes = st.multiselect(
+        "Mês",
+        meses
+    )
+
+# ==========================================
+# APLICAÇÃO DOS FILTROS
+# ==========================================
+churn_filtrado = churn_view.copy()
+
+if filtro_franquia:
+    churn_filtrado = churn_filtrado[
+        churn_filtrado["Franquia"]
+        .astype(str)
+        .isin(filtro_franquia)
+    ]
+
+if filtro_motivo:
+    churn_filtrado = churn_filtrado[
+        churn_filtrado["Motivo"]
+        .astype(str)
+        .isin(filtro_motivo)
+    ]
+
+if filtro_ano:
+    churn_filtrado = churn_filtrado[
+        churn_filtrado["Ano"]
+        .astype(str)
+        .isin(filtro_ano)
+    ]
+
+if filtro_mes:
+    churn_filtrado = churn_filtrado[
+        churn_filtrado["Mes"]
+        .astype(str)
+        .isin(filtro_mes)
+    ]
 
         # ==========================================
         # APLICAÇÃO DOS FILTROS
