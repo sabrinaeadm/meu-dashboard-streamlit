@@ -8,7 +8,7 @@ import numpy as np
 # CONFIGURAÇÃO DA PÁGINA
 # =====================================================
 st.set_page_config(
-    page_title="Dashboard Executivo - Culligan",
+    page_title="Dashboard Executivo - Whirlpool",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -61,7 +61,7 @@ try:
     df_risco, df_churn = load_data()
 
     # =====================================================
-    # ABAS (Nome da Aba 2 Atualizado conforme solicitado)
+    # ABAS
     # =====================================================
     tab1, tab2 = st.tabs([
         "⚠️ Gestão de Risco", 
@@ -76,20 +76,30 @@ try:
 
         # 1. FILTROS (Limpos por padrão)
         st.markdown("##### 🔎 Filtros de Risco")
-        rf1, rf2, rf3 = st.columns(3)
+        rf1, rf2, rf3, rf4 = st.columns(4) # Alterado para 4 colunas
         
         with rf1:
-            # Puxando a informação diretamente da coluna  ("Status")
             status_risco_opcoes = sorted(df_risco['Status'].dropna().unique())
-            filtro_status_risco = st.multiselect("Status da Tratativa (Coluna S)", status_risco_opcoes)
+            filtro_status_risco = st.multiselect("Status da Tratativa", status_risco_opcoes)
+        
         with rf2:
             ano_risco_opcoes = sorted(df_risco['Ano'].unique())
             filtro_ano_risco = st.multiselect("Ano do Evento", ano_risco_opcoes)
+        
         with rf3:
             mes_risco_opcoes = sorted(df_risco['Mês'].unique())
             filtro_mes_risco = st.multiselect("Mês do Evento", mes_risco_opcoes)
+            
+        with rf4:
+            # Novo filtro de Área
+            col_area_filtro = 'Área Primária Reclamada/Causadora do Risco'
+            if col_area_filtro in df_risco.columns:
+                area_risco_opcoes = sorted(df_risco[col_area_filtro].dropna().astype(str).unique())
+                filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes)
+            else:
+                filtro_area_risco = []
 
-        # Aplicar Filtros Risco (Se não selecionar nada, mostra tudo)
+        # Aplicar Filtros Risco
         risco_filtrado = df_risco.copy()
         if filtro_status_risco:
             risco_filtrado = risco_filtrado[risco_filtrado['Status'].isin(filtro_status_risco)]
@@ -97,6 +107,8 @@ try:
             risco_filtrado = risco_filtrado[risco_filtrado['Ano'].isin(filtro_ano_risco)]
         if filtro_mes_risco:
             risco_filtrado = risco_filtrado[risco_filtrado['Mês'].isin(filtro_mes_risco)]
+        if filtro_area_risco:
+            risco_filtrado = risco_filtrado[risco_filtrado[col_area_filtro].astype(str).isin(filtro_area_risco)]
 
         st.divider()
 
@@ -160,7 +172,7 @@ try:
             'Dias em aberto': 'Dias Parados (Aging)',
             'Área Primária Reclamada/Causadora do Risco': 'Área Responsável',
             'Grau de Risco Atual (Impacto Potencial: 5 = Perda Iminente)': 'Impacto (Risco Original)',
-            'Status': 'Status (Coluna)'
+            'Status': 'Status (Coluna S)'
         }
         
         cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
@@ -174,7 +186,7 @@ try:
     with tab2:
         st.subheader("Análise de Churn e Cancelamentos")
 
-        # 1. FILTROS (Limpos por padrão)
+        # 1. FILTROS
         st.markdown("##### 🔎 Filtros de Churn")
         cf1, cf2, cf3, cf4 = st.columns(4)
 
@@ -200,7 +212,7 @@ try:
             else:
                 filtro_status_churn = []
 
-        # Aplicação dos filtros (Se não selecionar nada, mostra tudo)
+        # Aplicação dos filtros
         churn_filtrado = df_churn.copy()
         if 'Franquia' in churn_filtrado.columns and filtro_franquia:
             churn_filtrado = churn_filtrado[churn_filtrado["Franquia"].astype(str).isin(filtro_franquia)]
@@ -237,7 +249,7 @@ try:
 
         st.divider()
 
-        # 3. TABELA DE EMPRESAS ATUALIZADA
+        # 3. TABELA DE EMPRESAS
         st.markdown("##### 🏢 Empresas com Solicitação (Detalhamento)")
         
         colunas_tabela_churn = {
