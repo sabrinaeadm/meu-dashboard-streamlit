@@ -160,7 +160,7 @@ try:
             'Dias em aberto': 'Dias Parados (Aging)',
             'Área Primária Reclamada/Causadora do Risco': 'Área Responsável',
             'Grau de Risco Atual (Impacto Potencial: 5 = Perda Iminente)': 'Impacto (Risco Original)',
-            'Status': 'Status (Coluna S)'
+            'Status': 'Status (Coluna)'
         }
         
         cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
