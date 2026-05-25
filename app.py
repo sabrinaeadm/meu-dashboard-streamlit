@@ -8,7 +8,7 @@ import numpy as np
 # CONFIGURAÇÃO DA PÁGINA
 # =====================================================
 st.set_page_config(
-    page_title="Dashboard Executivo - Whirlpool",
+    page_title="Dashboard Executivo - Culligan",
     layout="wide",
     initial_sidebar_state="expanded"
 )
