@@ -65,4 +65,17 @@ def load_data():
     # -------------------------------------------------
     # BLINDAGEM AUTOMÁTICA DE COLUNAS - CHURN
     # -------------------------------------------------
-    c_franquia_churn = next((c for c in df_churn.columns if
+    c_franquia_churn = next((c for c in df_churn.columns if 'franquia' in c.lower()), None)
+    if c_franquia_churn: df_churn.rename(columns={c_franquia_churn: 'Franquia_Standard'}, inplace=True)
+    
+    c_motivo_churn = next((c for c in df_churn.columns if 'motivo' in c.lower() and 'principal' in c.lower()), None)
+    if c_motivo_churn: df_churn.rename(columns={c_motivo_churn: 'Motivo_Standard'}, inplace=True)
+    
+    c_grupo_churn = next((c for c in df_churn.columns if 'nome' in c.lower() and 'grupo' in c.lower()), None)
+    if not c_grupo_churn:
+        c_grupo_churn = next((c for c in df_churn.columns if 'grupo' in c.lower() and 'quantidade' not in c.lower()), None)
+    if not c_grupo_churn:
+        c_grupo_churn = next((c for c in df_churn.columns if 'empresa' in c.lower() and 'cnpj' not in c.lower()), None)
+    if c_grupo_churn: df_churn.rename(columns={c_grupo_churn: 'Grupo_Standard'}, inplace=True)
+    
+    c_
