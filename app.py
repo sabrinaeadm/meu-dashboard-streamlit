@@ -167,3 +167,154 @@ try:
         with rf3:
             mes_risco_opcoes = sorted(df_risco['Mês'].unique()) if 'Mês' in df_risco.columns else []
             filtro_mes_risco = st.multiselect("Mês do Evento", mes_risco_opcoes)
+            
+        with rf4:
+            area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
+            filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes)
+
+        risco_filtrado = df_risco.copy()
+        if filtro_status_risco:
+            risco_filtrado = risco_filtrado[risco_filtrado['Status_Standard'].isin(filtro_status_risco)]
+        if filtro_ano_risco:
+            risco_filtrado = risco_filtrado[risco_filtrado['Ano'].isin(filtro_ano_risco)]
+        if filtro_mes_risco:
+            risco_filtrado = risco_filtrado[risco_filtrado['Mês'].isin(filtro_mes_risco)]
+        if filtro_area_risco:
+            risco_filtrado = risco_filtrado[risco_filtrado['Area_Standard'].astype(str).isin(filtro_area_risco)]
+
+        st.divider()
+
+        total_casos = len(risco_filtrado)
+        aging_medio = risco_filtrado['Aging_Standard'].mean() if 'Aging_Standard' in risco_filtrado.columns else 0
+        risco_medio = risco_filtrado['Grau Numérico'].mean() if 'Grau Numérico' in risco_filtrado.columns else 0
+        try:
+            area_critica = risco_filtrado['Area_Standard'].mode()[0] if not risco_filtrado.empty else "N/A"
+        except:
+            area_critica = "N/A"
+
+        kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+        kpi1.metric("Total de Casos", f"{total_casos}")
+        kpi2.metric("Aging Médio (Dias)", f"{aging_medio:.1f}" if pd.notnull(aging_medio) else "0")
+        kpi3.metric("Risco Médio", f"{risco_medio:.1f}" if pd.notnull(risco_medio) else "0")
+        kpi4.metric("Área Crítica (Moda)", str(area_critica))
+
+        st.divider()
+
+        g1, g2 = st.columns([1, 2])
+        with g1:
+            st.markdown("##### 🌡️ Termômetro de Risco (Médio)")
+            fig_gauge = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = risco_medio if pd.notnull(risco_medio) else 0,
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                gauge = {
+                    'axis': {'range': [None, 5], 'tickwidth': 1},
+                    'bar': {'color': "darkred"},
+                    'steps': [
+                        {'range': [0, 2], 'color': "lightgreen"},
+                        {'range': [2, 3.5], 'color': "gold"},
+                        {'range': [3.5, 5], 'color': "salmon"}
+                    ]
+                }
+            ))
+            fig_gauge.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20))
+            st.plotly_chart(fig_gauge, use_container_width=True)
+
+        with g2:
+            st.markdown("##### 📊 Riscos por Área")
+            if 'Area_Standard' in risco_filtrado.columns:
+                df_area = risco_filtrado['Area_Standard'].value_counts().reset_index()
+                df_area.columns = ['Área', 'Quantidade']
+                fig_bar = px.bar(df_area, x='Área', y='Quantidade', text_auto=True, color='Quantidade', color_continuous_scale='Reds')
+                fig_bar.update_layout(height=280, xaxis_title="", yaxis_title="Casos", showlegend=False, margin=dict(l=0, r=0, t=20, b=0))
+                st.plotly_chart(fig_bar, use_container_width=True)
+
+        st.markdown("##### 📋 Detalhamento dos Casos")
+        colunas_tabela_risco = {
+            'Empresa_Standard': 'Empresa',
+            'Aging_Standard': 'Dias Parados (Aging)',
+            'Area_Standard': 'Área Responsável',
+            'Grau_Standard': 'Impacto (Risco Original)',
+            'Status_Standard': 'Status (Coluna S)'
+        }
+        cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
+        df_risco_view = risco_filtrado[cols_existentes].rename(columns=colunas_tabela_risco)
+        st.dataframe(df_risco_view, use_container_width=True, hide_index=True)
+
+
+    # =====================================================
+    # ABA 2: SOLICITAÇÕES ENTRANTES CHURN/CANCELAMENTOS
+    # =====================================================
+    with tab2:
+        st.subheader("Análise de Churn e Cancelamentos")
+
+        st.markdown("##### 🔎 Filtros de Churn")
+        cf1, cf2, cf3, cf4 = st.columns(4)
+
+        with cf1:
+            franquias = sorted(df_churn["Franquia_Standard"].dropna().astype(str).unique()) if 'Franquia_Standard' in df_churn.columns else []
+            filtro_franquia = st.multiselect("Franquia", franquias)
+
+        with cf2:
+            ano_churn_opcoes = sorted(df_churn['Ano'].unique()) if 'Ano' in df_churn.columns else []
+            filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes)
+
+        with cf3:
+            mes_churn_opcoes = sorted(df_churn['Mês'].unique()) if 'Mês' in df_churn.columns else []
+            filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes)
+
+        with cf4:
+            status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
+            filtro_status_churn = st.multiselect("Status", status_churn)
+
+        churn_filtrado = df_churn.copy()
+        
+        if 'Franquia_Standard' in churn_filtrado.columns and filtro_franquia:
+            churn_filtrado = churn_filtrado[churn_filtrado["Franquia_Standard"].astype(str).isin(filtro_franquia)]
+        if filtro_ano_churn:
+            churn_filtrado = churn_filtrado[churn_filtrado["Ano"].isin(filtro_ano_churn)]
+        if filtro_mes_churn:
+            churn_filtrado = churn_filtrado[churn_filtrado["Mês"].isin(filtro_mes_churn)]
+        if 'Status_Standard' in churn_filtrado.columns and filtro_status_churn:
+            churn_filtrado = churn_filtrado[churn_filtrado["Status_Standard"].astype(str).isin(filtro_status_churn)]
+
+        st.divider()
+
+        cg1, cg2 = st.columns(2)
+        with cg1:
+            st.markdown("##### 📌 Cancelamentos por Franquia")
+            if 'Franquia_Standard' in churn_filtrado.columns:
+                df_franq = churn_filtrado['Franquia_Standard'].value_counts().reset_index()
+                df_franq.columns = ['Franquia', 'Cancelamentos']
+                fig_franq = px.bar(df_franq.head(10), x='Cancelamentos', y='Franquia', orientation='h', text_auto=True, color='Cancelamentos', color_continuous_scale='Blues')
+                fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False, height=320, margin=dict(l=0, r=0, t=20, b=0))
+                st.plotly_chart(fig_franq, use_container_width=True)
+
+        with cg2:
+            st.markdown("##### 📌 Motivo Principal do Cancelamento")
+            if 'Motivo_Standard' in churn_filtrado.columns:
+                df_motivo = churn_filtrado['Motivo_Standard'].value_counts().reset_index()
+                df_motivo.columns = ['Motivo', 'Quantidade']
+                fig_motivo = px.pie(df_motivo.head(7), values='Quantidade', names='Motivo', hole=0.4)
+                fig_motivo.update_layout(height=320, margin=dict(l=0, r=0, t=20, b=0))
+                st.plotly_chart(fig_motivo, use_container_width=True)
+
+        st.divider()
+
+        st.markdown("##### 🏢 Empresas com Solicitação (Detalhamento)")
+        colunas_tabela_churn = {
+            'Grupo_Standard': 'Nome do Grupo / Empresa',
+            'CNPJ_Standard': 'CNPJ',
+            'Franquia_Standard': 'Franquia',
+            'Motivo_Standard': 'Motivo Principal',
+            'Qtd_Cancelamentos_Standard': 'Qtd. Cancelamentos',
+            'Qtd_Revertidos_Standard': 'Quantidade de Revertidos',
+            'Status_Standard': 'Status'
+        }
+        cols_existentes_churn = [c for c in colunas_tabela_churn.keys() if c in churn_filtrado.columns]
+        df_churn_view = churn_filtrado[cols_existentes_churn].rename(columns=colunas_tabela_churn)
+        st.dataframe(df_churn_view, use_container_width=True, hide_index=True)
+
+except Exception as e:
+    st.error("Ocorreu um erro interno ao gerar os gráficos. Verifique o formato do arquivo.")
+    st.exception(e)
