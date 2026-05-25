@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import numpy as np
+import os
 
 # =====================================================
 # CONFIGURAÇÃO DA PÁGINA
@@ -17,16 +17,46 @@ st.title("📊 Dashboard Executivo")
 st.markdown("Acompanhamento de Riscos e Churn para tomada de decisão estratégica.")
 
 # =====================================================
+# MENU LATERAL: PLANO B (UPLOAD MANUAL)
+# =====================================================
+st.sidebar.markdown("### 📂 Inserir Dados")
+st.sidebar.markdown("Se o painel estiver em branco, carregue os ficheiros manualmente aqui:")
+up_risco = st.sidebar.file_uploader("1. Gestão de Riscos (CSV ou Excel)", type=['csv', 'xlsx'])
+up_churn = st.sidebar.file_uploader("2. Churn/Cancelamentos (CSV ou Excel)", type=['csv', 'xlsx'])
+
+# =====================================================
 # FUNÇÃO LEITURA E TRATAMENTO COM MAPEAMENTO INTELIGENTE
 # =====================================================
 @st.cache_data
-def load_data():
-    try:
-        df_risco = pd.read_csv("Gestão de riscos e reclamações(respostas).csv", sep=";", encoding="utf-8")
-        df_churn = pd.read_csv("Formulário de Solicitação de Cancelamento(Respostas).csv", sep=";", encoding="utf-8")
-    except:
-        df_risco = pd.read_excel("gestao.xlsx", engine="openpyxl")
-        df_churn = pd.read_excel("churn.xlsx", engine="openpyxl")
+def load_data(file_risco, file_churn):
+    df_risco = pd.DataFrame()
+    df_churn = pd.DataFrame()
+    
+    # Nomes padrão esperados no GitHub
+    caminho_risco = "Gestão de riscos e reclamações(respostas).csv"
+    caminho_churn = "Formulário de Solicitação de Cancelamento(Respostas).csv"
+    
+    # 1. Tenta carregar o ficheiro do Risco
+    if file_risco is not None:
+        if file_risco.name.endswith('.csv'):
+            df_risco = pd.read_csv(file_risco, sep=";", encoding="utf-8")
+        else:
+            df_risco = pd.read_excel(file_risco)
+    elif os.path.exists(caminho_risco):
+        df_risco = pd.read_csv(caminho_risco, sep=";", encoding="utf-8")
+
+    # 2. Tenta carregar o ficheiro de Churn
+    if file_churn is not None:
+        if file_churn.name.endswith('.csv'):
+            df_churn = pd.read_csv(file_churn, sep=";", encoding="utf-8")
+        else:
+            df_churn = pd.read_excel(file_churn)
+    elif os.path.exists(caminho_churn):
+        df_churn = pd.read_csv(caminho_churn, sep=";", encoding="utf-8")
+
+    # Se estiverem vazios, devolve já para mostrar o aviso no ecrã principal
+    if df_risco.empty or df_churn.empty:
+        return df_risco, df_churn
 
     # Limpeza inicial de quebras de linha e espaços nas colunas
     df_risco.columns = df_risco.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
@@ -53,29 +83,4 @@ def load_data():
         c_status_risco = next((c for c in df_risco.columns if 'status' in c.lower()), None)
         if c_status_risco: df_risco.rename(columns={c_status_risco: 'Status_Standard'}, inplace=True)
 
-    c_data_risco = next((c for c in df_risco.columns if 'data' in c.lower() and ('reclama' in c.lower() or 'risco' in c.lower() or 'original' in c.lower())), None)
-    if c_data_risco:
-        df_risco['Data Base'] = pd.to_datetime(df_risco[c_data_risco], format='%d/%m/%Y', errors='coerce')
-        df_risco['Ano'] = df_risco['Data Base'].dt.year.fillna(0).astype(int).astype(str).replace('0', 'N/A')
-        df_risco['Mês'] = df_risco['Data Base'].dt.month.fillna(0).astype(int).astype(str).replace('0', 'N/A')
-    
-    if 'Grau_Standard' in df_risco.columns:
-        df_risco['Grau Numérico'] = df_risco['Grau_Standard'].astype(str).str.extract(r'(\d+)').astype(float)
-
-    # -------------------------------------------------
-    # BLINDAGEM AUTOMÁTICA DE COLUNAS - CHURN
-    # -------------------------------------------------
-    c_franquia_churn = next((c for c in df_churn.columns if 'franquia' in c.lower()), None)
-    if c_franquia_churn: df_churn.rename(columns={c_franquia_churn: 'Franquia_Standard'}, inplace=True)
-    
-    c_motivo_churn = next((c for c in df_churn.columns if 'motivo' in c.lower() and 'principal' in c.lower()), None)
-    if c_motivo_churn: df_churn.rename(columns={c_motivo_churn: 'Motivo_Standard'}, inplace=True)
-    
-    c_grupo_churn = next((c for c in df_churn.columns if 'nome' in c.lower() and 'grupo' in c.lower()), None)
-    if not c_grupo_churn:
-        c_grupo_churn = next((c for c in df_churn.columns if 'grupo' in c.lower() and 'quantidade' not in c.lower()), None)
-    if not c_grupo_churn:
-        c_grupo_churn = next((c for c in df_churn.columns if 'empresa' in c.lower() and 'cnpj' not in c.lower()), None)
-    if c_grupo_churn: df_churn.rename(columns={c_grupo_churn: 'Grupo_Standard'}, inplace=True)
-    
-    c_
+    c_data_risco = next((c for c in df_risco.columns if 'data' in c.lower() and ('reclama' in c.lower() or '
