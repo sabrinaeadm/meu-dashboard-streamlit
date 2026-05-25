@@ -79,7 +79,7 @@ try:
         rf1, rf2, rf3 = st.columns(3)
         
         with rf1:
-            # Puxando a informação diretamente da coluna S ("Status")
+            # Puxando a informação diretamente da coluna  ("Status")
             status_risco_opcoes = sorted(df_risco['Status'].dropna().unique())
             filtro_status_risco = st.multiselect("Status da Tratativa (Coluna S)", status_risco_opcoes)
         with rf2:
