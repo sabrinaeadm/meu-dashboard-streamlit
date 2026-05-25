@@ -10,7 +10,7 @@ import os
 st.set_page_config(
     page_title="Dashboard Executivo - Whirlpool",
     layout="wide",
-    initial_sidebar_state="collapsed" # <--- Deixa a barra escondida por padrão!
+    initial_sidebar_state="collapsed" # Deixa a barra escondida por padrão!
 )
 
 st.title("📊 Dashboard Executivo")
@@ -19,7 +19,6 @@ st.markdown("Acompanhamento de Riscos e Churn para tomada de decisão estratégi
 # =====================================================
 # MENU LATERAL: PLANO B (UPLOAD MANUAL ELEGANTI)
 # =====================================================
-# Cria uma "sanfona" (expander) fechada por padrão
 with st.sidebar.expander("⚙️ Inserir Dados Manualmente", expanded=False):
     st.markdown("<small>Use apenas se o painel não carregar automaticamente.</small>", unsafe_allow_html=True)
     up_risco = st.file_uploader("1. Gestão de Riscos", type=['csv', 'xlsx'])
@@ -33,11 +32,10 @@ def load_data(file_risco, file_churn):
     df_risco = pd.DataFrame()
     df_churn = pd.DataFrame()
     
-    # Nomes padrão esperados no GitHub
     caminho_risco = "Gestão de riscos e reclamações(respostas).csv"
     caminho_churn = "Formulário de Solicitação de Cancelamento(Respostas).csv"
     
-    # 1. Tenta carregar o arquivo do Risco
+    # 1. Tenta carregar o ficheiro do Risco
     if file_risco is not None:
         if file_risco.name.endswith('.csv'):
             df_risco = pd.read_csv(file_risco, sep=";", encoding="utf-8")
@@ -46,7 +44,7 @@ def load_data(file_risco, file_churn):
     elif os.path.exists(caminho_risco):
         df_risco = pd.read_csv(caminho_risco, sep=";", encoding="utf-8")
 
-    # 2. Tenta carregar o arquivo de Churn
+    # 2. Tenta carregar o ficheiro de Churn
     if file_churn is not None:
         if file_churn.name.endswith('.csv'):
             df_churn = pd.read_csv(file_churn, sep=";", encoding="utf-8")
@@ -58,12 +56,12 @@ def load_data(file_risco, file_churn):
     if df_risco.empty or df_churn.empty:
         return df_risco, df_churn
 
-    # Limpeza inicial de quebras de linha e espaços nas colunas
+    # Limpeza inicial
     df_risco.columns = df_risco.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
     df_churn.columns = df_churn.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
 
     # -------------------------------------------------
-    # BLINDAGEM AUTOMÁTICA DE COLUNAS - GESTÃO DE RISCO
+    # BLINDAGEM - GESTÃO DE RISCO
     # -------------------------------------------------
     c_empresa_risco = next((c for c in df_risco.columns if 'empresa' in c.lower() or 'cliente' in c.lower()), None)
     if c_empresa_risco: df_risco.rename(columns={c_empresa_risco: 'Empresa_Standard'}, inplace=True)
@@ -93,7 +91,7 @@ def load_data(file_risco, file_churn):
         df_risco['Grau Numérico'] = df_risco['Grau_Standard'].astype(str).str.extract(r'(\d+)').astype(float)
 
     # -------------------------------------------------
-    # BLINDAGEM AUTOMÁTICA DE COLUNAS - CHURN
+    # BLINDAGEM - CHURN
     # -------------------------------------------------
     c_franquia_churn = next((c for c in df_churn.columns if 'franquia' in c.lower()), None)
     if c_franquia_churn: df_churn.rename(columns={c_franquia_churn: 'Franquia_Standard'}, inplace=True)
@@ -102,10 +100,8 @@ def load_data(file_risco, file_churn):
     if c_motivo_churn: df_churn.rename(columns={c_motivo_churn: 'Motivo_Standard'}, inplace=True)
     
     c_grupo_churn = next((c for c in df_churn.columns if 'nome' in c.lower() and 'grupo' in c.lower()), None)
-    if not c_grupo_churn:
-        c_grupo_churn = next((c for c in df_churn.columns if 'grupo' in c.lower() and 'quantidade' not in c.lower()), None)
-    if not c_grupo_churn:
-        c_grupo_churn = next((c for c in df_churn.columns if 'empresa' in c.lower() and 'cnpj' not in c.lower()), None)
+    if not c_grupo_churn: c_grupo_churn = next((c for c in df_churn.columns if 'grupo' in c.lower() and 'quantidade' not in c.lower()), None)
+    if not c_grupo_churn: c_grupo_churn = next((c for c in df_churn.columns if 'empresa' in c.lower() and 'cnpj' not in c.lower()), None)
     if c_grupo_churn: df_churn.rename(columns={c_grupo_churn: 'Grupo_Standard'}, inplace=True)
     
     c_cnpj_churn = next((c for c in df_churn.columns if 'cnpj' in c.lower()), None)
@@ -129,6 +125,12 @@ def load_data(file_risco, file_churn):
         df_churn['Ano'] = df_churn['Data Base'].dt.year.fillna(0).astype(int).astype(str).replace('0', 'N/A')
         df_churn['Mês'] = df_churn['Data Base'].dt.month.fillna(0).astype(int).astype(str).replace('0', 'N/A')
 
+    # Força as colunas numéricas a serem números (para somar nos KPIs de Churn)
+    if 'Qtd_Cancelamentos_Standard' in df_churn.columns:
+        df_churn['Qtd_Cancelamentos_Standard'] = pd.to_numeric(df_churn['Qtd_Cancelamentos_Standard'], errors='coerce').fillna(0)
+    if 'Qtd_Revertidos_Standard' in df_churn.columns:
+        df_churn['Qtd_Revertidos_Standard'] = pd.to_numeric(df_churn['Qtd_Revertidos_Standard'], errors='coerce').fillna(0)
+
     return df_risco, df_churn
 
 # =====================================================
@@ -138,8 +140,8 @@ try:
     df_risco, df_churn = load_data(up_risco, up_churn)
 
     if df_risco.empty or df_churn.empty:
-        st.warning("⚠️ Os arquivos de dados originais não foram encontrados.")
-        st.info("👉 **Abra o menu lateral (clicando na setinha > no canto superior esquerdo)** e arraste os seus arquivos de Excel/CSV para visualizar o dashboard!")
+        st.warning("⚠️ Os ficheiros de dados originais não foram encontrados.")
+        st.info("👉 **Abra o menu lateral (clicando na setinha > no canto superior esquerdo)** e arraste os seus ficheiros de Excel/CSV para visualizar o dashboard!")
         st.stop()
 
     tab1, tab2 = st.tabs([
@@ -158,39 +160,30 @@ try:
         
         with rf1:
             status_risco_opcoes = sorted(df_risco['Status_Standard'].dropna().unique()) if 'Status_Standard' in df_risco.columns else []
-            filtro_status_risco = st.multiselect("Status da Tratativa (Coluna S)", status_risco_opcoes)
-        
+            filtro_status_risco = st.multiselect("Status da Tratativa", status_risco_opcoes)
         with rf2:
             ano_risco_opcoes = sorted(df_risco['Ano'].unique()) if 'Ano' in df_risco.columns else []
             filtro_ano_risco = st.multiselect("Ano do Evento", ano_risco_opcoes)
-        
         with rf3:
             mes_risco_opcoes = sorted(df_risco['Mês'].unique()) if 'Mês' in df_risco.columns else []
             filtro_mes_risco = st.multiselect("Mês do Evento", mes_risco_opcoes)
-            
         with rf4:
             area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
             filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes)
 
         risco_filtrado = df_risco.copy()
-        if filtro_status_risco:
-            risco_filtrado = risco_filtrado[risco_filtrado['Status_Standard'].isin(filtro_status_risco)]
-        if filtro_ano_risco:
-            risco_filtrado = risco_filtrado[risco_filtrado['Ano'].isin(filtro_ano_risco)]
-        if filtro_mes_risco:
-            risco_filtrado = risco_filtrado[risco_filtrado['Mês'].isin(filtro_mes_risco)]
-        if filtro_area_risco:
-            risco_filtrado = risco_filtrado[risco_filtrado['Area_Standard'].astype(str).isin(filtro_area_risco)]
+        if filtro_status_risco: risco_filtrado = risco_filtrado[risco_filtrado['Status_Standard'].isin(filtro_status_risco)]
+        if filtro_ano_risco: risco_filtrado = risco_filtrado[risco_filtrado['Ano'].isin(filtro_ano_risco)]
+        if filtro_mes_risco: risco_filtrado = risco_filtrado[risco_filtrado['Mês'].isin(filtro_mes_risco)]
+        if filtro_area_risco: risco_filtrado = risco_filtrado[risco_filtrado['Area_Standard'].astype(str).isin(filtro_area_risco)]
 
         st.divider()
 
         total_casos = len(risco_filtrado)
         aging_medio = risco_filtrado['Aging_Standard'].mean() if 'Aging_Standard' in risco_filtrado.columns else 0
         risco_medio = risco_filtrado['Grau Numérico'].mean() if 'Grau Numérico' in risco_filtrado.columns else 0
-        try:
-            area_critica = risco_filtrado['Area_Standard'].mode()[0] if not risco_filtrado.empty else "N/A"
-        except:
-            area_critica = "N/A"
+        try: area_critica = risco_filtrado['Area_Standard'].mode()[0] if not risco_filtrado.empty else "N/A"
+        except: area_critica = "N/A"
 
         kpi1, kpi2, kpi3, kpi4 = st.columns(4)
         kpi1.metric("Total de Casos", f"{total_casos}")
@@ -254,15 +247,12 @@ try:
         with cf1:
             franquias = sorted(df_churn["Franquia_Standard"].dropna().astype(str).unique()) if 'Franquia_Standard' in df_churn.columns else []
             filtro_franquia = st.multiselect("Franquia", franquias)
-
         with cf2:
             ano_churn_opcoes = sorted(df_churn['Ano'].unique()) if 'Ano' in df_churn.columns else []
             filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes)
-
         with cf3:
             mes_churn_opcoes = sorted(df_churn['Mês'].unique()) if 'Mês' in df_churn.columns else []
             filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes)
-
         with cf4:
             status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
             filtro_status_churn = st.multiselect("Status", status_churn)
@@ -279,6 +269,21 @@ try:
             churn_filtrado = churn_filtrado[churn_filtrado["Status_Standard"].astype(str).isin(filtro_status_churn)]
 
         st.divider()
+
+        # ==========================================
+        # NOVOS KPIs DE CHURN NO TOPO!
+        # ==========================================
+        total_solicitacoes = len(churn_filtrado)
+        total_cancelamentos = churn_filtrado['Qtd_Cancelamentos_Standard'].sum() if 'Qtd_Cancelamentos_Standard' in churn_filtrado.columns else 0
+        total_revertidos = churn_filtrado['Qtd_Revertidos_Standard'].sum() if 'Qtd_Revertidos_Standard' in churn_filtrado.columns else 0
+
+        kc1, kc2, kc3 = st.columns(3)
+        kc1.metric("Total de Solicitações", f"{total_solicitacoes}")
+        kc2.metric("Qtd. Contratos Cancelados", f"{total_cancelamentos:.0f}")
+        kc3.metric("Qtd. Contratos Revertidos", f"{total_revertidos:.0f}")
+
+        st.divider()
+        # ==========================================
 
         cg1, cg2 = st.columns(2)
         with cg1:
@@ -316,5 +321,5 @@ try:
         st.dataframe(df_churn_view, use_container_width=True, hide_index=True)
 
 except Exception as e:
-    st.error("Ocorreu um erro interno ao gerar os gráficos. Verifique o formato do arquivo.")
+    st.error("Ocorreu um erro interno ao gerar os gráficos. Verifique o formato do ficheiro.")
     st.exception(e)
