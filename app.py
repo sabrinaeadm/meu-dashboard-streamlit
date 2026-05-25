@@ -8,7 +8,7 @@ import numpy as np
 # CONFIGURAÇÃO DA PÁGINA
 # =====================================================
 st.set_page_config(
-    page_title="Dashboard Executivo - Culligan",
+    page_title="Dashboard Executivo - Whirlpool",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -21,13 +21,10 @@ st.markdown("Acompanhamento de Riscos e Churn para tomada de decisão estratégi
 # =====================================================
 @st.cache_data
 def load_data():
-    # Ajuste o nome dos arquivos conforme o que está na sua pasta
-    # Usando o padrão de CSV exportado (separador ';' e encoding latin1/utf8)
     try:
         df_risco = pd.read_csv("Gestão de riscos e reclamações(respostas).csv", sep=";", encoding="utf-8")
         df_churn = pd.read_csv("Formulário de Solicitação de Cancelamento(Respostas).csv", sep=";", encoding="utf-8")
     except:
-        # Fallback caso mude para excel
         df_risco = pd.read_excel("gestao.xlsx", engine="openpyxl")
         df_churn = pd.read_excel("churn.xlsx", engine="openpyxl")
 
@@ -36,7 +33,6 @@ def load_data():
     df_churn.columns = df_churn.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
 
     # TRATAMENTOS - RISCO
-    # Datas
     if 'Data da Reclamação/Evento Original (Início do Risco)' in df_risco.columns:
         df_risco['Data Base'] = pd.to_datetime(df_risco['Data da Reclamação/Evento Original (Início do Risco)'], format='%d/%m/%Y', errors='coerce')
         df_risco['Ano'] = df_risco['Data Base'].dt.year.fillna(0).astype(int).astype(str).replace('0', 'N/A')
@@ -53,7 +49,6 @@ def load_data():
         df_churn['Ano'] = df_churn['Data Base'].dt.year.fillna(0).astype(int).astype(str).replace('0', 'N/A')
         df_churn['Mês'] = df_churn['Data Base'].dt.month.fillna(0).astype(int).astype(str).replace('0', 'N/A')
 
-    # Garantir que a coluna Franquia exista limpa
     if 'Franquia' not in df_churn.columns and 'Franquia\n' in df_churn.columns:
         df_churn.rename(columns={'Franquia\n': 'Franquia'}, inplace=True)
 
@@ -66,9 +61,12 @@ try:
     df_risco, df_churn = load_data()
 
     # =====================================================
-    # ABAS
+    # ABAS (Nome da Aba 2 Atualizado conforme solicitado)
     # =====================================================
-    tab1, tab2 = st.tabs(["⚠️ Gestão de Risco", "📉 Churn / Cancelamentos"])
+    tab1, tab2 = st.tabs([
+        "⚠️ Gestão de Risco", 
+        "📉 Solicitações Entrantes Churn/Cancelamentos"
+    ])
 
     # =====================================================
     # ABA 1: GESTÃO DE RISCO
@@ -76,26 +74,29 @@ try:
     with tab1:
         st.subheader("Painel de Gestão de Risco e Reclamações")
 
-        # 1. FILTROS (Linha superior)
+        # 1. FILTROS (Limpos por padrão)
         st.markdown("##### 🔎 Filtros de Risco")
         rf1, rf2, rf3 = st.columns(3)
         
         with rf1:
-            status_risco_opcoes = sorted(df_risco['Status Atual da Tratativa'].dropna().unique())
-            filtro_status_risco = st.multiselect("Status da Tratativa", status_risco_opcoes, default=status_risco_opcoes)
+            # Puxando a informação diretamente da coluna S ("Status")
+            status_risco_opcoes = sorted(df_risco['Status'].dropna().unique())
+            filtro_status_risco = st.multiselect("Status da Tratativa (Coluna S)", status_risco_opcoes)
         with rf2:
             ano_risco_opcoes = sorted(df_risco['Ano'].unique())
-            filtro_ano_risco = st.multiselect("Ano do Evento", ano_risco_opcoes, default=ano_risco_opcoes)
+            filtro_ano_risco = st.multiselect("Ano do Evento", ano_risco_opcoes)
         with rf3:
             mes_risco_opcoes = sorted(df_risco['Mês'].unique())
-            filtro_mes_risco = st.multiselect("Mês do Evento", mes_risco_opcoes, default=mes_risco_opcoes)
+            filtro_mes_risco = st.multiselect("Mês do Evento", mes_risco_opcoes)
 
-        # Aplicar Filtros Risco
-        risco_filtrado = df_risco[
-            (df_risco['Status Atual da Tratativa'].isin(filtro_status_risco if filtro_status_risco else status_risco_opcoes)) &
-            (df_risco['Ano'].isin(filtro_ano_risco if filtro_ano_risco else ano_risco_opcoes)) &
-            (df_risco['Mês'].isin(filtro_mes_risco if filtro_mes_risco else mes_risco_opcoes))
-        ]
+        # Aplicar Filtros Risco (Se não selecionar nada, mostra tudo)
+        risco_filtrado = df_risco.copy()
+        if filtro_status_risco:
+            risco_filtrado = risco_filtrado[risco_filtrado['Status'].isin(filtro_status_risco)]
+        if filtro_ano_risco:
+            risco_filtrado = risco_filtrado[risco_filtrado['Ano'].isin(filtro_ano_risco)]
+        if filtro_mes_risco:
+            risco_filtrado = risco_filtrado[risco_filtrado['Mês'].isin(filtro_mes_risco)]
 
         st.divider()
 
@@ -125,7 +126,6 @@ try:
 
         with g1:
             st.markdown("##### 🌡️ Termômetro de Risco (Médio)")
-            # Gráfico de Gauge (Termômetro)
             fig_gauge = go.Figure(go.Indicator(
                 mode = "gauge+number",
                 value = risco_medio if pd.notnull(risco_medio) else 0,
@@ -159,49 +159,48 @@ try:
             'Empresa (Obrigatório)': 'Empresa',
             'Dias em aberto': 'Dias Parados (Aging)',
             'Área Primária Reclamada/Causadora do Risco': 'Área Responsável',
-            'Grau de Risco Atual (Impacto Potencial: 5 = Perda Iminente)': 'Impacto (Risco Original)'
+            'Grau de Risco Atual (Impacto Potencial: 5 = Perda Iminente)': 'Impacto (Risco Original)',
+            'Status': 'Status (Coluna S)'
         }
         
-        # Filtra apenas as colunas que existem no dataframe
         cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
         df_risco_view = risco_filtrado[cols_existentes].rename(columns=colunas_tabela_risco)
-        
         st.dataframe(df_risco_view, use_container_width=True, hide_index=True)
 
 
     # =====================================================
-    # ABA 2: CHURN
+    # ABA 2: SOLICITAÇÕES ENTRANTES CHURN/CANCELAMENTOS
     # =====================================================
     with tab2:
         st.subheader("Análise de Churn e Cancelamentos")
 
-        # 1. FILTROS
+        # 1. FILTROS (Limpos por padrão)
         st.markdown("##### 🔎 Filtros de Churn")
         cf1, cf2, cf3, cf4 = st.columns(4)
 
         with cf1:
             if 'Franquia' in df_churn.columns:
                 franquias = sorted(df_churn["Franquia"].dropna().astype(str).unique())
-                filtro_franquia = st.multiselect("Franquia", franquias, default=franquias)
+                filtro_franquia = st.multiselect("Franquia", franquias)
             else:
                 filtro_franquia = []
 
         with cf2:
             ano_churn_opcoes = sorted(df_churn['Ano'].unique())
-            filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes, default=ano_churn_opcoes)
+            filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes)
 
         with cf3:
             mes_churn_opcoes = sorted(df_churn['Mês'].unique())
-            filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes, default=mes_churn_opcoes)
+            filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes)
 
         with cf4:
             if 'Status' in df_churn.columns:
                 status_churn = sorted(df_churn["Status"].dropna().astype(str).unique())
-                filtro_status_churn = st.multiselect("Status", status_churn, default=status_churn)
+                filtro_status_churn = st.multiselect("Status", status_churn)
             else:
                 filtro_status_churn = []
 
-        # Aplicação dos filtros
+        # Aplicação dos filtros (Se não selecionar nada, mostra tudo)
         churn_filtrado = df_churn.copy()
         if 'Franquia' in churn_filtrado.columns and filtro_franquia:
             churn_filtrado = churn_filtrado[churn_filtrado["Franquia"].astype(str).isin(filtro_franquia)]
@@ -232,30 +231,29 @@ try:
             if col_motivo in churn_filtrado.columns:
                 df_motivo = churn_filtrado[col_motivo].value_counts().reset_index()
                 df_motivo.columns = ['Motivo', 'Quantidade']
-                # Gráfico de rosca para motivos
                 fig_motivo = px.pie(df_motivo.head(7), values='Quantidade', names='Motivo', hole=0.4)
                 fig_motivo.update_layout(height=350, margin=dict(l=0, r=0, t=0, b=0))
                 st.plotly_chart(fig_motivo, use_container_width=True)
 
         st.divider()
 
-        # 3. TABELA DE EMPRESAS
+        # 3. TABELA DE EMPRESAS ATUALIZADA
         st.markdown("##### 🏢 Empresas com Solicitação (Detalhamento)")
         
         colunas_tabela_churn = {
-            'Nome do Grupo': 'Empresa / Grupo',
+            'Nome do Grupo': 'Nome do Grupo / Empresa',
             'CNPJ da Empresa': 'CNPJ',
             'Franquia': 'Franquia',
-            'Motivo Principal do Cancelamento': 'Motivo',
+            'Motivo Principal do Cancelamento': 'Motivo Principal',
             'Quantidade Total de Cancelamentos Solicitados': 'Qtd. Cancelamentos',
+            'Quant. Revertido': 'Quantidade de Revertidos',
             'Status': 'Status'
         }
         
         cols_existentes_churn = [c for c in colunas_tabela_churn.keys() if c in churn_filtrado.columns]
         df_churn_view = churn_filtrado[cols_existentes_churn].rename(columns=colunas_tabela_churn)
-        
         st.dataframe(df_churn_view, use_container_width=True, hide_index=True)
 
 except Exception as e:
-    st.error("Erro ao executar a aplicação. Verifique se os nomes dos arquivos CSV estão corretos e na mesma pasta do código.")
+    st.error("Erro ao executar a aplicação. Certifique-se de que as planilhas/CSVs estão na mesma pasta do código.")
     st.exception(e)
