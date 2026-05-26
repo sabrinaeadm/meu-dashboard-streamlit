@@ -13,8 +13,27 @@ st.set_page_config(
     initial_sidebar_state="collapsed" # Menu lateral escondido por padrão
 )
 
+# Estilização CSS para forçar textos escuros se o usuário estiver em tema claro
+# e garantir um visual limpo.
+st.markdown("""
+<style>
+    [data-testid="stMetricValue"] {
+        color: #0A2342;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("📊 Dashboard Executivo")
 st.markdown("Acompanhamento de Riscos e Churn para tomada de decisão estratégica.")
+
+# =====================================================
+# PALETA DE CORES EXECUTIVA (Navy/Dark Blue)
+# =====================================================
+COLOR_NAVY_DEEP = "#0A2342"
+COLOR_NAVY_MED = "#153B6D"
+COLOR_NAVY_LIGHT = "#3664A3"
+# Escala de azuis para gráficos
+BLUE_SCALE = [COLOR_NAVY_DEEP, COLOR_NAVY_MED, COLOR_NAVY_LIGHT, "#5C85BB", "#89A7D3"]
 
 # =====================================================
 # MENU LATERAL: UPLOAD COM MEMÓRIA PERSISTENTE
@@ -55,14 +74,11 @@ def load_data():
     df_churn = pd.DataFrame()
     
     # --- CARREGAR GESTÃO DE RISCOS (Ordem de Prioridade) ---
-    # 1. Tenta pegar a base salva pelo upload manual
     if os.path.exists("risco_temporario.csv"):
         try: df_risco = pd.read_csv("risco_temporario.csv", sep=";", encoding="utf-8")
         except: df_risco = pd.read_excel("risco_temporario.csv")
-    # 2. Tenta pegar do GitHub (Caso o usuário suba com nome simples)
     elif os.path.exists("risco.csv"):
         df_risco = pd.read_csv("risco.csv", sep=";", encoding="utf-8")
-    # 3. Tenta pegar do GitHub (Com o nome gigante original)
     elif os.path.exists("Gestão de riscos e reclamações(respostas).csv"):
         df_risco = pd.read_csv("Gestão de riscos e reclamações(respostas).csv", sep=";", encoding="utf-8")
 
@@ -219,21 +235,25 @@ try:
         g1, g2 = st.columns([1, 2])
         with g1:
             st.markdown("##### 🌡️ Termômetro de Risco (Médio)")
+            # AJUSTE: Cores intensas e ponteiro preto
             fig_gauge = go.Figure(go.Indicator(
                 mode = "gauge+number",
                 value = risco_medio if pd.notnull(risco_medio) else 0,
                 domain = {'x': [0, 1], 'y': [0, 1]},
                 gauge = {
-                    'axis': {'range': [None, 5], 'tickwidth': 1},
-                    'bar': {'color': "darkred"},
+                    'axis': {'range': [None, 5], 'tickwidth': 1, 'tickcolor': "black"},
+                    'bar': {'color': "black", 'thickness': 0.25}, # Marcador interno PRETO
+                    'bgcolor': "white",
+                    'borderwidth': 2,
+                    'bordercolor': "gray",
                     'steps': [
-                        {'range': [0, 2], 'color': "lightgreen"},
-                        {'range': [2, 3.5], 'color': "gold"},
-                        {'range': [3.5, 5], 'color': "salmon"}
-                    ]
+                        {'range': [0, 2], 'color': "#008000"},   # VERDE INTENSO
+                        {'range': [2, 3.5], 'color': "#FFD700"}, # AMARELO OURO INTENSO
+                        {'range': [3.5, 5], 'color': "#FF0000"}  # VERMELHO VIVO INTENSO
+                    ],
                 }
             ))
-            fig_gauge.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20))
+            fig_gauge.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig_gauge, use_container_width=True)
 
         with g2:
@@ -241,8 +261,9 @@ try:
             if 'Area_Standard' in risco_filtrado.columns:
                 df_area = risco_filtrado['Area_Standard'].value_counts().reset_index()
                 df_area.columns = ['Área', 'Quantidade']
-                fig_bar = px.bar(df_area, x='Área', y='Quantidade', text_auto=True, color='Quantidade', color_continuous_scale='Reds')
-                fig_bar.update_layout(height=280, xaxis_title="", yaxis_title="Casos", showlegend=False, margin=dict(l=0, r=0, t=20, b=0))
+                # AJUSTE: Gráfico em tons de Azul Escuro
+                fig_bar = px.bar(df_area, x='Área', y='Quantidade', text_auto=True, color='Quantidade', color_continuous_scale=BLUE_SCALE)
+                fig_bar.update_layout(height=280, xaxis_title="", yaxis_title="Casos", showlegend=False, margin=dict(l=0, r=0, t=20, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig_bar, use_container_width=True)
 
         st.markdown("##### 📋 Detalhamento dos Casos")
@@ -310,8 +331,9 @@ try:
             if 'Franquia_Standard' in churn_filtrado.columns:
                 df_franq = churn_filtrado['Franquia_Standard'].value_counts().reset_index()
                 df_franq.columns = ['Franquia', 'Cancelamentos']
-                fig_franq = px.bar(df_franq.head(10), x='Cancelamentos', y='Franquia', orientation='h', text_auto=True, color='Cancelamentos', color_continuous_scale='Blues')
-                fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False, height=320, margin=dict(l=0, r=0, t=20, b=0))
+                # AJUSTE: Gráfico em tons de Azul Escuro
+                fig_franq = px.bar(df_franq.head(10), x='Cancelamentos', y='Franquia', orientation='h', text_auto=True, color='Cancelamentos', color_continuous_scale=BLUE_SCALE)
+                fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False, height=320, margin=dict(l=0, r=0, t=20, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig_franq, use_container_width=True)
 
         with cg2:
@@ -319,8 +341,9 @@ try:
             if 'Motivo_Standard' in churn_filtrado.columns:
                 df_motivo = churn_filtrado['Motivo_Standard'].value_counts().reset_index()
                 df_motivo.columns = ['Motivo', 'Quantidade']
-                fig_motivo = px.pie(df_motivo.head(7), values='Quantidade', names='Motivo', hole=0.4)
-                fig_motivo.update_layout(height=320, margin=dict(l=0, r=0, t=20, b=0))
+                # AJUSTE: Gráfico de Rosca usando a paleta Azul Escuro
+                fig_motivo = px.pie(df_motivo.head(7), values='Quantidade', names='Motivo', hole=0.4, color_discrete_sequence=BLUE_SCALE)
+                fig_motivo.update_layout(height=320, margin=dict(l=0, r=0, t=20, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig_motivo, use_container_width=True)
 
         st.divider()
