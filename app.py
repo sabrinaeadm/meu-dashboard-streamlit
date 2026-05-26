@@ -10,53 +10,76 @@ import os
 st.set_page_config(
     page_title="Dashboard Executivo - Whirlpool",
     layout="wide",
-    initial_sidebar_state="collapsed" # Deixa a barra escondida por padrão!
+    initial_sidebar_state="collapsed" # Menu lateral escondido por padrão
 )
 
 st.title("📊 Dashboard Executivo")
 st.markdown("Acompanhamento de Riscos e Churn para tomada de decisão estratégica.")
 
 # =====================================================
-# MENU LATERAL: PLANO B (UPLOAD MANUAL ELEGANTI)
+# MENU LATERAL: UPLOAD COM MEMÓRIA PERSISTENTE
 # =====================================================
-with st.sidebar.expander("⚙️ Inserir Dados Manualmente", expanded=False):
-    st.markdown("<small>Use apenas se o painel não carregar automaticamente.</small>", unsafe_allow_html=True)
+with st.sidebar.expander("⚙️ Atualizar Bases de Dados", expanded=False):
+    st.markdown("<small>Carregue novas bases aqui. Elas ficarão salvas no sistema mesmo se você atualizar a página (F5).</small>", unsafe_allow_html=True)
+    
     up_risco = st.file_uploader("1. Gestão de Riscos", type=['csv', 'xlsx'])
     up_churn = st.file_uploader("2. Churn/Cancelamentos", type=['csv', 'xlsx'])
 
+    # Salva os arquivos no disco do servidor para não sumirem no F5
+    if up_risco:
+        with open("risco_temporario.csv", "wb") as f:
+            f.write(up_risco.getbuffer())
+        st.success("✅ Base de Riscos salva no sistema!")
+        
+    if up_churn:
+        with open("churn_temporario.csv", "wb") as f:
+            f.write(up_churn.getbuffer())
+        st.success("✅ Base de Churn salva no sistema!")
+
+    st.divider()
+    
+    # Botão para deletar as bases quando o usuário quiser
+    if st.button("🗑️ Limpar Bases Salvas"):
+        if os.path.exists("risco_temporario.csv"):
+            os.remove("risco_temporario.csv")
+        if os.path.exists("churn_temporario.csv"):
+            os.remove("churn_temporario.csv")
+        st.success("Bases limpas com sucesso!")
+        st.rerun()
+
 # =====================================================
-# FUNÇÃO LEITURA E TRATAMENTO COM MAPEAMENTO INTELIGENTE
+# FUNÇÃO LEITURA E TRATAMENTO (SEM CACHE PARA ATUALIZAR NA HORA)
 # =====================================================
-@st.cache_data
-def load_data(file_risco, file_churn):
+def load_data():
     df_risco = pd.DataFrame()
     df_churn = pd.DataFrame()
     
-    caminho_risco = "Gestão de riscos e reclamações(respostas).csv"
-    caminho_churn = "Formulário de Solicitação de Cancelamento(Respostas).csv"
-    
-    # 1. Tenta carregar o ficheiro do Risco
-    if file_risco is not None:
-        if file_risco.name.endswith('.csv'):
-            df_risco = pd.read_csv(file_risco, sep=";", encoding="utf-8")
-        else:
-            df_risco = pd.read_excel(file_risco)
-    elif os.path.exists(caminho_risco):
-        df_risco = pd.read_csv(caminho_risco, sep=";", encoding="utf-8")
+    # --- CARREGAR GESTÃO DE RISCOS (Ordem de Prioridade) ---
+    # 1. Tenta pegar a base salva pelo upload manual
+    if os.path.exists("risco_temporario.csv"):
+        try: df_risco = pd.read_csv("risco_temporario.csv", sep=";", encoding="utf-8")
+        except: df_risco = pd.read_excel("risco_temporario.csv")
+    # 2. Tenta pegar do GitHub (Caso o usuário suba com nome simples)
+    elif os.path.exists("risco.csv"):
+        df_risco = pd.read_csv("risco.csv", sep=";", encoding="utf-8")
+    # 3. Tenta pegar do GitHub (Com o nome gigante original)
+    elif os.path.exists("Gestão de riscos e reclamações(respostas).csv"):
+        df_risco = pd.read_csv("Gestão de riscos e reclamações(respostas).csv", sep=";", encoding="utf-8")
 
-    # 2. Tenta carregar o ficheiro de Churn
-    if file_churn is not None:
-        if file_churn.name.endswith('.csv'):
-            df_churn = pd.read_csv(file_churn, sep=";", encoding="utf-8")
-        else:
-            df_churn = pd.read_excel(file_churn)
-    elif os.path.exists(caminho_churn):
-        df_churn = pd.read_csv(caminho_churn, sep=";", encoding="utf-8")
+    # --- CARREGAR CHURN (Ordem de Prioridade) ---
+    if os.path.exists("churn_temporario.csv"):
+        try: df_churn = pd.read_csv("churn_temporario.csv", sep=";", encoding="utf-8")
+        except: df_churn = pd.read_excel("churn_temporario.csv")
+    elif os.path.exists("churn.csv"):
+        df_churn = pd.read_csv("churn.csv", sep=";", encoding="utf-8")
+    elif os.path.exists("Formulário de Solicitação de Cancelamento(Respostas).csv"):
+        df_churn = pd.read_csv("Formulário de Solicitação de Cancelamento(Respostas).csv", sep=";", encoding="utf-8")
 
+    # Se estiver tudo vazio, retorna para avisar o usuário
     if df_risco.empty or df_churn.empty:
         return df_risco, df_churn
 
-    # Limpeza inicial
+    # --- LIMPEZA E PADRONIZAÇÃO ---
     df_risco.columns = df_risco.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
     df_churn.columns = df_churn.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
 
@@ -125,7 +148,7 @@ def load_data(file_risco, file_churn):
         df_churn['Ano'] = df_churn['Data Base'].dt.year.fillna(0).astype(int).astype(str).replace('0', 'N/A')
         df_churn['Mês'] = df_churn['Data Base'].dt.month.fillna(0).astype(int).astype(str).replace('0', 'N/A')
 
-    # Força as colunas numéricas a serem números (para somar nos KPIs de Churn)
+    # Força as colunas numéricas a serem números
     if 'Qtd_Cancelamentos_Standard' in df_churn.columns:
         df_churn['Qtd_Cancelamentos_Standard'] = pd.to_numeric(df_churn['Qtd_Cancelamentos_Standard'], errors='coerce').fillna(0)
     if 'Qtd_Revertidos_Standard' in df_churn.columns:
@@ -137,11 +160,11 @@ def load_data(file_risco, file_churn):
 # EXECUÇÃO DO APP
 # =====================================================
 try:
-    df_risco, df_churn = load_data(up_risco, up_churn)
+    df_risco, df_churn = load_data()
 
     if df_risco.empty or df_churn.empty:
-        st.warning("⚠️ Os ficheiros de dados originais não foram encontrados.")
-        st.info("👉 **Abra o menu lateral (clicando na setinha > no canto superior esquerdo)** e arraste os seus ficheiros de Excel/CSV para visualizar o dashboard!")
+        st.warning("⚠️ O Dashboard está aguardando os dados.")
+        st.info("👉 **Abra o menu lateral (clicando na setinha > no canto superior esquerdo)** e arraste os seus arquivos de Excel/CSV para visualizar o painel. Eles ficarão salvos!")
         st.stop()
 
     tab1, tab2 = st.tabs([
@@ -270,9 +293,6 @@ try:
 
         st.divider()
 
-        # ==========================================
-        # NOVOS KPIs DE CHURN NO TOPO!
-        # ==========================================
         total_solicitacoes = len(churn_filtrado)
         total_cancelamentos = churn_filtrado['Qtd_Cancelamentos_Standard'].sum() if 'Qtd_Cancelamentos_Standard' in churn_filtrado.columns else 0
         total_revertidos = churn_filtrado['Qtd_Revertidos_Standard'].sum() if 'Qtd_Revertidos_Standard' in churn_filtrado.columns else 0
@@ -283,7 +303,6 @@ try:
         kc3.metric("Qtd. Contratos Revertidos", f"{total_revertidos:.0f}")
 
         st.divider()
-        # ==========================================
 
         cg1, cg2 = st.columns(2)
         with cg1:
@@ -321,5 +340,5 @@ try:
         st.dataframe(df_churn_view, use_container_width=True, hide_index=True)
 
 except Exception as e:
-    st.error("Ocorreu um erro interno ao gerar os gráficos. Verifique o formato do ficheiro.")
+    st.error("Ocorreu um erro interno ao gerar os gráficos. Verifique o formato do arquivo.")
     st.exception(e)
