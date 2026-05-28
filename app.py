@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# Injeção de CSS: Paleta Clara, Cartões Brancos (Tamanho Reduzido) e PDF
+# Injeção de CSS: Paleta Clara, Cartões Brancos (SUPERCOMPACTOS) e PDF
 estilo_minimalista = """
 <style>
     /* Ocultar elementos nativos do Streamlit */
@@ -25,40 +25,63 @@ estilo_minimalista = """
     
     /* Reduzir margens superiores da página */
     .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 1rem !important;
+        padding-top: 1rem !important;
+        padding-bottom: 0.5rem !important;
     }
     
     /* Tipografia e Cor Global */
     html, body, [class*="css"] {
-        font-size: 13px !important;
+        font-size: 12px !important; /* Fonte global reduzida de 13px para 12px */
         color: #1E293B !important;
     }
     
     /* Estilizar abas */
-    .stTabs [data-baseweb="tab-list"] { gap: 20px; }
+    .stTabs [data-baseweb="tab-list"] { gap: 15px; }
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
+        height: 40px; /* Altura reduzida de 50px para 40px */
         white-space: pre-wrap;
         background-color: transparent;
         color: #0033A0;
         font-weight: 600;
+        font-size: 13px; /* Fonte levemente menor nas abas */
     }
 
-    /* Estilo dos Cartões - AJUSTADOS PARA FICAREM MENORES E MAIS COMPACTOS */
+    /* Estilo dos Cartões - AJUSTADOS PARA SEREM MUITO MENORES E MAIS COMPACTOS */
     .kpi-card {
         background-color: #FFFFFF;
-        border-radius: 8px;
-        padding: 12px 16px; /* Espaçamento interno reduzido */
-        box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05); /* Sombra mais leve */
+        border-radius: 6px; /* Cantos levemente menos arredondados */
+        padding: 6px 10px; /* Espaçamento interno SUPER reduzido */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Sombra quase imperceptível */
         border: 1px solid #E2E8F0;
         display: flex;
         flex-direction: column;
         justify-content: center;
+        width: 90%; /* Usa 90% da coluna para ficarem menos "quadrados" */
+        margin: 0 auto; /* Centraliza a caixa menor */
     }
-    .kpi-val { font-size: 28px; font-weight: 800; color: #0033A0; line-height: 1.1; margin-bottom: 2px; } /* Fonte e margem reduzidas */
-    .kpi-label { font-size: 11px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; } /* Fonte reduzida */
-    .kpi-sub { font-size: 11px; margin-top: 6px; font-weight: 600; } /* Margem e fonte reduzidas */
+    .kpi-val { 
+        font-size: 22px; /* Fonte reduzida de 28px para 22px */
+        font-weight: 800; 
+        color: #0033A0; 
+        line-height: 1.0; /* Altura de linha reduzida */
+        margin-bottom: 0px; /* Margem inferior zerada */
+    } 
+    .kpi-label { 
+        font-size: 10px; /* Fonte reduzida de 11px para 10px */
+        font-weight: 600; 
+        color: #64748B; 
+        text-transform: uppercase; 
+        letter-spacing: 0.3px; /* Espaçamento entre letras reduzido */
+    } 
+    .kpi-sub { 
+        font-size: 10px; /* Fonte reduzida de 11px para 10px */
+        margin-top: 2px; /* Margem superior drasticamente reduzida de 6px para 2px */
+        font-weight: 600; 
+    } 
+    .kpi-sub span {
+        padding: 2px 4px; /* Espaçamento da tag de porcentagem reduzido */
+        font-size: 10px; /* Fonte da tag de porcentagem reduzida */
+    }
     
     /* Regras para exportação perfeita em PDF (Ctrl + P) */
     @media print {
