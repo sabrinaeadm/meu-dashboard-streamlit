@@ -202,7 +202,7 @@ try:
     ])
 
     # =====================================================
-    # ABA 1: GESTÃO DE RISCO (Intacta, apenas com cards novos)
+    # ABA 1: GESTÃO DE RISCO 
     # =====================================================
     with tab1:
         if df_risco.empty:
@@ -293,13 +293,12 @@ try:
 
 
     # =====================================================
-    # ABA 2: CHURN E CANCELAMENTOS (Layout ajustado para a Imagem)
+    # ABA 2: CHURN E CANCELAMENTOS
     # =====================================================
     with tab2:
         if df_churn.empty:
             st.warning("⚠️ Faça o upload da base de **Churn/Cancelamentos** no menu lateral esquerdo para visualizar este painel.")
         else:
-            # Filtros originais intactos
             st.markdown("<p style='color:#64748B; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
             cf1, cf2, cf3, cf4, cf5 = st.columns(5)
 
@@ -332,14 +331,12 @@ try:
 
             st.divider()
 
-            # Cálculos originais
             total_solicitacoes = len(churn_filtrado)
             total_cancelamentos = churn_filtrado['Qtd_Cancelamentos_Standard'].sum() if 'Qtd_Cancelamentos_Standard' in churn_filtrado.columns else 0
             total_revertidos = churn_filtrado['Qtd_Revertidos_Standard'].sum() if 'Qtd_Revertidos_Standard' in churn_filtrado.columns else 0
             total_contratos_filtrados = total_cancelamentos + total_revertidos
             pct_rev = safe_pct(total_revertidos, total_contratos_filtrados)
 
-            # Cartões estilo imagem
             kc1, kc2, kc3 = st.columns(3)
             
             kc1.markdown(f"""
@@ -366,7 +363,6 @@ try:
 
             st.divider()
 
-            # Nova disposição baseada na Imagem (Gráficos na Esquerda, Tabela na Direita)
             col_esq, col_dir = st.columns([1, 1.6])
             
             with col_esq:
@@ -375,7 +371,8 @@ try:
                     df_franq = churn_filtrado['Franquia_Standard'].value_counts().reset_index()
                     df_franq.columns = ['Franquia', 'Cancelamentos']
                     fig_franq = px.bar(df_franq.head(6), x='Cancelamentos', y='Franquia', orientation='h', text_auto=True, color='Cancelamentos', color_continuous_scale=BLUE_SCALE)
-                    fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False, height=220, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                    # Adicionado coloraxis_showscale=False para remover a barra de cores lateral
+                    fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, showlegend=False, height=220, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                     st.plotly_chart(fig_franq, use_container_width=True)
 
                 st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; margin-top:10px;'>🎯 Motivadores Principais</p>", unsafe_allow_html=True)
@@ -401,7 +398,6 @@ try:
                 cols_existentes_churn = [c for c in colunas_tabela_churn.keys() if c in churn_filtrado.columns]
                 df_churn_view = churn_filtrado[cols_existentes_churn].rename(columns=colunas_tabela_churn)
                 
-                # Aumentei a altura para a tabela preencher o espaço da direita
                 st.dataframe(df_churn_view, use_container_width=True, hide_index=True, height=500)
 
 except Exception as e:
