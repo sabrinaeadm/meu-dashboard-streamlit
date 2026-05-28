@@ -31,56 +31,56 @@ estilo_minimalista = """
     
     /* Tipografia e Cor Global */
     html, body, [class*="css"] {
-        font-size: 12px !important; /* Fonte global reduzida de 13px para 12px */
+        font-size: 12px !important; 
         color: #1E293B !important;
     }
     
     /* Estilizar abas */
     .stTabs [data-baseweb="tab-list"] { gap: 15px; }
     .stTabs [data-baseweb="tab"] {
-        height: 40px; /* Altura reduzida de 50px para 40px */
+        height: 40px; 
         white-space: pre-wrap;
         background-color: transparent;
         color: #0033A0;
         font-weight: 600;
-        font-size: 13px; /* Fonte levemente menor nas abas */
+        font-size: 13px; 
     }
 
     /* Estilo dos Cartões - AJUSTADOS PARA SEREM MUITO MENORES E MAIS COMPACTOS */
     .kpi-card {
         background-color: #FFFFFF;
-        border-radius: 6px; /* Cantos levemente menos arredondados */
-        padding: 6px 10px; /* Espaçamento interno SUPER reduzido */
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Sombra quase imperceptível */
+        border-radius: 6px; 
+        padding: 6px 10px; 
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
         border: 1px solid #E2E8F0;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        width: 90%; /* Usa 90% da coluna para ficarem menos "quadrados" */
-        margin: 0 auto; /* Centraliza a caixa menor */
+        width: 90%; 
+        margin: 0 auto; 
     }
     .kpi-val { 
-        font-size: 22px; /* Fonte reduzida de 28px para 22px */
+        font-size: 22px; 
         font-weight: 800; 
         color: #0033A0; 
-        line-height: 1.0; /* Altura de linha reduzida */
-        margin-bottom: 0px; /* Margem inferior zerada */
+        line-height: 1.0; 
+        margin-bottom: 0px; 
     } 
     .kpi-label { 
-        font-size: 10px; /* Fonte reduzida de 11px para 10px */
+        font-size: 10px; 
         font-weight: 600; 
         color: #64748B; 
         text-transform: uppercase; 
-        letter-spacing: 0.3px; /* Espaçamento entre letras reduzido */
+        letter-spacing: 0.3px; 
     } 
     .kpi-sub { 
-        font-size: 10px; /* Fonte reduzida de 11px para 10px */
-        margin-top: 2px; /* Margem superior drasticamente reduzida de 6px para 2px */
+        font-size: 10px; 
+        margin-top: 2px; 
         font-weight: 600; 
     } 
     .kpi-sub span {
-        padding: 2px 4px; /* Espaçamento da tag de porcentagem reduzido */
-        font-size: 10px; /* Fonte da tag de porcentagem reduzida */
+        padding: 2px 4px; 
+        font-size: 10px; 
     }
     
     /* Regras para exportação perfeita em PDF (Ctrl + P) */
@@ -90,6 +90,8 @@ estilo_minimalista = """
         .stTabs [data-baseweb="tab-list"] { display: none !important; }
         .stApp { background-color: #FFFFFF !important; }
         .block-container { padding: 0 !important; max-width: 100% !important; }
+        /* Ocultar barra de busca na impressão */
+        div[data-testid="stTextInput"] { display: none !important; }
     }
 </style>
 """
@@ -379,7 +381,7 @@ try:
             <div class="kpi-card">
                 <div class="kpi-val">{total_revertidos:02.0f}</div>
                 <div class="kpi-label">CONTRATOS REVERTIDOS</div>
-                <div class="kpi-sub"><span style="background:#E0E7FF; color:#1D4ED8; padding:3px 6px; border-radius:4px;">{pct_rev:.1f}% Taxa de Reversão</span></div>
+                <div class="kpi-sub"><span style="background:#E0E7FF; color:#1D4ED8; border-radius:4px;">{pct_rev:.1f}% Taxa de Reversão</span></div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -406,20 +408,36 @@ try:
                     st.plotly_chart(fig_motivo, use_container_width=True)
 
             with col_dir:
-                st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px;'>🗂️ Detalhe por Empresa do Dia</p>", unsafe_allow_html=True)
+                # Topo da tabela dividido para o título e a barra de busca
+                c_topo1, c_topo2 = st.columns([1, 1])
+                with c_topo1:
+                    st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; padding-top:8px;'>🗂️ Detalhe por Empresa</p>", unsafe_allow_html=True)
+                with c_topo2:
+                    busca_cliente = st.text_input("Buscar Cliente", placeholder="🔍 Digite CNPJ ou Empresa...", label_visibility="collapsed")
+                
+                # Lógica da busca
+                if busca_cliente:
+                    # Filtra a tabela visual onde o CNPJ ou Nome contiverem o texto da busca
+                    filtro_tabela = churn_filtrado[
+                        churn_filtrado['Grupo_Standard'].astype(str).str.contains(busca_cliente, case=False, na=False) |
+                        churn_filtrado['CNPJ_Standard'].astype(str).str.contains(busca_cliente, case=False, na=False)
+                    ]
+                else:
+                    filtro_tabela = churn_filtrado
+                
                 colunas_tabela_churn = {
                     'Grupo_Standard': 'Empresa / Grupo',
                     'CNPJ_Standard': 'CNPJ',
                     'Franquia_Standard': 'Franquia',
                     'Motivo_Standard': 'Motivo Principal',
-                    'Qtd_Cancelamentos_Standard': 'Cancelamentos (Qtd)',
-                    'Qtd_Revertidos_Standard': 'Reversões (Qtd)',
+                    'Qtd_Cancelamentos_Standard': 'Cancelamentos',
+                    'Qtd_Revertidos_Standard': 'Reversões',
                     'Status_Standard': 'Status'
                 }
-                cols_existentes_churn = [c for c in colunas_tabela_churn.keys() if c in churn_filtrado.columns]
-                df_churn_view = churn_filtrado[cols_existentes_churn].rename(columns=colunas_tabela_churn)
+                cols_existentes_churn = [c for c in colunas_tabela_churn.keys() if c in filtro_tabela.columns]
+                df_churn_view = filtro_tabela[cols_existentes_churn].rename(columns=colunas_tabela_churn)
                 
-                st.dataframe(df_churn_view, use_container_width=True, hide_index=True, height=500)
+                st.dataframe(df_churn_view, use_container_width=True, hide_index=True, height=480)
 
 except Exception as e:
     st.error("Erro interno ao gerar visualizações. Por favor, cheque a integridade da sua base de dados.")
