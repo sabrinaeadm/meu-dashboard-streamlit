@@ -111,7 +111,7 @@ def load_data():
     elif os.path.exists("Formulário de Solicitação de Cancelamento(Respostas).csv"):
         df_churn = pd.read_csv("Formulário de Solicitação de Cancelamento(Respostas).csv", sep=";", encoding="utf-8")
 
-    # --- LIMPEZA E PADRONIZAÇÃO (Agora trata independente) ---
+    # --- LIMPEZA E PADRONIZAÇÃO ---
     if not df_risco.empty:
         df_risco.columns = df_risco.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
         c_empresa_risco = next((c for c in df_risco.columns if 'empresa' in c.lower() or 'cliente' in c.lower()), None)
@@ -174,6 +174,8 @@ def load_data():
             df_churn['Data Base'] = pd.to_datetime(df_churn[c_data_churn], format='%d/%m/%Y', errors='coerce')
             df_churn['Ano'] = df_churn['Data Base'].dt.year.fillna(0).astype(int).astype(str).replace('0', 'N/A')
             df_churn['Mês'] = df_churn['Data Base'].dt.month.fillna(0).astype(int).astype(str).replace('0', 'N/A')
+            # Padroniza a data em texto legível para o componente de filtro executivo
+            df_churn['Data_Standard'] = df_churn['Data Base'].dt.strftime('%d/%m/%Y').fillna('N/A').replace('NaT', 'N/A')
 
         if 'Qtd_Cancelamentos_Standard' in df_churn.columns:
             df_churn['Qtd_Cancelamentos_Standard'] = pd.to_numeric(df_churn['Qtd_Cancelamentos_Standard'], errors='coerce').fillna(0)
@@ -191,7 +193,6 @@ def safe_pct(part, whole):
 try:
     df_risco, df_churn = load_data()
 
-    # O painel vai carregar as abas de qualquer forma agora
     tab1, tab2 = st.tabs([
         "GESTÃO DE RISCOS", 
         "CHURN E CANCELAMENTOS"
@@ -308,7 +309,9 @@ try:
             st.warning("⚠️ Faça o upload da base de **Churn/Cancelamentos** no menu lateral esquerdo para visualizar este painel.")
         else:
             st.markdown("<p style='color:#5C85BB; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
-            cf1, cf2, cf3, cf4 = st.columns(4)
+            
+            # Expandido de 4 para 5 colunas para comportar o filtro de data
+            cf1, cf2, cf3, cf4, cf5 = st.columns(5)
 
             with cf1:
                 franquias = sorted(df_churn["Franquia_Standard"].dropna().astype(str).unique()) if 'Franquia_Standard' in df_churn.columns else []
@@ -322,6 +325,10 @@ try:
             with cf4:
                 status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
                 filtro_status_churn = st.multiselect("Status", status_churn)
+            with cf5:
+                # Novo filtro de data adicionado aqui
+                data_churn_opcoes = sorted(df_churn["Data_Standard"].dropna().unique()) if 'Data_Standard' in df_churn.columns else []
+                filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes)
 
             churn_filtrado = df_churn.copy()
             
@@ -333,23 +340,24 @@ try:
                 churn_filtrado = churn_filtrado[churn_filtrado["Mês"].isin(filtro_mes_churn)]
             if 'Status_Standard' in churn_filtrado.columns and filtro_status_churn:
                 churn_filtrado = churn_filtrado[churn_filtrado["Status_Standard"].astype(str).isin(filtro_status_churn)]
+            if 'Data_Standard' in churn_filtrado.columns and filtro_data_churn:
+                churn_filtrado = churn_filtrado[churn_filtrado["Data_Standard"].isin(filtro_data_churn)]
 
             st.divider()
 
+            # Cálculos de Volume e Eficiência
             total_solicitacoes = len(churn_filtrado)
-            pct_solic = safe_pct(total_solicitacoes, len(df_churn))
-            
             total_cancelamentos = churn_filtrado['Qtd_Cancelamentos_Standard'].sum() if 'Qtd_Cancelamentos_Standard' in churn_filtrado.columns else 0
             total_revertidos = churn_filtrado['Qtd_Revertidos_Standard'].sum() if 'Qtd_Revertidos_Standard' in churn_filtrado.columns else 0
             
             total_contratos_filtrados = total_cancelamentos + total_revertidos
-            pct_canc = safe_pct(total_cancelamentos, total_contratos_filtrados)
             pct_rev = safe_pct(total_revertidos, total_contratos_filtrados)
 
+            # Alterado os KPIs conforme solicitado (removido as porcentagens das duas primeiras métricas)
             kc1, kc2, kc3 = st.columns(3)
-            kc1.metric("Volume de Solicitações", f"{total_solicitacoes} ({pct_solic:.1f}%)", help="Total Filtrado (% vs Base Total)")
-            kc2.metric("Contratos Cancelados", f"{total_cancelamentos:.0f} ({pct_canc:.1f}%)", help="Volume Absoluto (% do Total de Contratos Solicitados)")
-            kc3.metric("Contratos Revertidos", f"{total_revertidos:.0f} ({pct_rev:.1f}%)", help="Volume Absoluto (% do Total de Contratos Solicitados)")
+            kc1.metric("Volume de Solicitações", f"{total_solicitacoes}", help="Total Filtrado Absoluto")
+            kc2.metric("Contratos Cancelados", f"{total_cancelamentos:.0f}", help="Volume Absoluto de Contratos")
+            kc3.metric("Contratos Revertidos", f"{total_revertidos:.0f} ({pct_rev:.1f}%)", help="Volume Absoluto (% do Total de Contratos Tratados)")
 
             st.divider()
 
