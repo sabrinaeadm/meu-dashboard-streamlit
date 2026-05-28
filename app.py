@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# Injeção de CSS ajustada (mantendo o botão de abrir/fechar menu lateral)
+# Injeção de CSS ajustada
 estilo_minimalista = """
 <style>
     /* Ocultar apenas o menu do Streamlit e footer, mantendo o header para a setinha do menu lateral */
@@ -275,7 +275,8 @@ try:
                         ],
                     }
                 ))
-                fig_gauge.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20))
+                # Reduzido de 280 para 220
+                fig_gauge.update_layout(height=220, margin=dict(l=20, r=20, t=20, b=20))
                 st.plotly_chart(fig_gauge, use_container_width=True)
 
             with g2:
@@ -285,7 +286,8 @@ try:
                     df_area.columns = ['Área', 'Quantidade']
                     fig_area = px.pie(df_area, values='Quantidade', names='Área', hole=0.6, color_discrete_sequence=BLUE_SCALE)
                     fig_area.update_traces(textinfo='value+percent', textposition='inside')
-                    fig_area.update_layout(height=280, showlegend=True, margin=dict(l=0, r=0, t=10, b=10))
+                    # Reduzido de 280 para 220
+                    fig_area.update_layout(height=220, showlegend=True, margin=dict(l=0, r=0, t=10, b=10))
                     st.plotly_chart(fig_area, use_container_width=True)
 
             st.markdown("<p style='font-weight:bold;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
@@ -310,7 +312,6 @@ try:
         else:
             st.markdown("<p style='color:#5C85BB; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
             
-            # Expandido de 4 para 5 colunas para comportar o filtro de data
             cf1, cf2, cf3, cf4, cf5 = st.columns(5)
 
             with cf1:
@@ -326,7 +327,6 @@ try:
                 status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
                 filtro_status_churn = st.multiselect("Status", status_churn)
             with cf5:
-                # Novo filtro de data adicionado aqui
                 data_churn_opcoes = sorted(df_churn["Data_Standard"].dropna().unique()) if 'Data_Standard' in df_churn.columns else []
                 filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes)
 
@@ -345,7 +345,6 @@ try:
 
             st.divider()
 
-            # Cálculos de Volume e Eficiência
             total_solicitacoes = len(churn_filtrado)
             total_cancelamentos = churn_filtrado['Qtd_Cancelamentos_Standard'].sum() if 'Qtd_Cancelamentos_Standard' in churn_filtrado.columns else 0
             total_revertidos = churn_filtrado['Qtd_Revertidos_Standard'].sum() if 'Qtd_Revertidos_Standard' in churn_filtrado.columns else 0
@@ -353,7 +352,6 @@ try:
             total_contratos_filtrados = total_cancelamentos + total_revertidos
             pct_rev = safe_pct(total_revertidos, total_contratos_filtrados)
 
-            # Alterado os KPIs conforme solicitado (removido as porcentagens das duas primeiras métricas)
             kc1, kc2, kc3 = st.columns(3)
             kc1.metric("Volume de Solicitações", f"{total_solicitacoes}", help="Total Filtrado Absoluto")
             kc2.metric("Contratos Cancelados", f"{total_cancelamentos:.0f}", help="Volume Absoluto de Contratos")
@@ -369,7 +367,8 @@ try:
                     df_franq = churn_filtrado['Franquia_Standard'].value_counts().reset_index()
                     df_franq.columns = ['Franquia', 'Cancelamentos']
                     fig_franq = px.bar(df_franq.head(10), x='Cancelamentos', y='Franquia', orientation='h', text_auto=True, color='Cancelamentos', color_continuous_scale=BLUE_SCALE)
-                    fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False, height=320, margin=dict(l=0, r=0, t=10, b=0))
+                    # Reduzido de 320 para 250
+                    fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False, height=250, margin=dict(l=0, r=0, t=10, b=0))
                     st.plotly_chart(fig_franq, use_container_width=True)
 
             with cg2:
@@ -379,7 +378,8 @@ try:
                     df_motivo.columns = ['Motivo', 'Quantidade']
                     fig_motivo = px.pie(df_motivo.head(7), values='Quantidade', names='Motivo', hole=0.6, color_discrete_sequence=BLUE_SCALE)
                     fig_motivo.update_traces(textinfo='value+percent', textposition='inside')
-                    fig_motivo.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), showlegend=True)
+                    # Reduzido de 320 para 250
+                    fig_motivo.update_layout(height=250, margin=dict(l=0, r=0, t=10, b=0), showlegend=True)
                     st.plotly_chart(fig_motivo, use_container_width=True)
 
             st.markdown("<p style='font-weight:bold;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
