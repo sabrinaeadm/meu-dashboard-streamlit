@@ -5,53 +5,90 @@ import plotly.graph_objects as go
 import os
 
 # =====================================================
-# CONFIGURAÇÃO DA PÁGINA
+# CONFIGURAÇÃO DA PÁGINA (Expandida e Minimalista)
 # =====================================================
 st.set_page_config(
-    page_title="Dashboard Executivo - Whirlpool",
+    page_title="Dashboard Executivo",
     layout="wide",
-    initial_sidebar_state="collapsed" 
+    initial_sidebar_state="expanded" 
 )
 
-st.title("📊 Dashboard Executivo")
-st.markdown("Acompanhamento de Riscos e Churn para tomada de decisão estratégica.")
+# Injeção de CSS para ocultar elementos nativos, diminuir fonte e aplicar paleta Azul/Branco
+estilo_minimalista = """
+<style>
+    /* Ocultar header, footer e menu do Streamlit */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Reduzir margens superiores da página */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+    
+    /* Ajuste de Fonte e Cor Global (Azul Escuro) */
+    html, body, [class*="css"] {
+        font-size: 13px !important;
+        color: #0A2342 !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Estilizar abas e métricas */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 20px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: transparent;
+        color: #153B6D;
+        font-weight: 600;
+    }
+    
+    /* Remover bordas pesadas */
+    div[data-testid="stMetricValue"] {
+        font-size: 1.8rem !important;
+        color: #0A2342 !important;
+    }
+</style>
+"""
+st.markdown(estilo_minimalista, unsafe_allow_html=True)
 
 # =====================================================
-# PALETA DE CORES EXECUTIVA (Apenas para aba de Risco)
+# PALETA DE CORES EXECUTIVA
 # =====================================================
 BLUE_SCALE = ["#0A2342", "#153B6D", "#3664A3", "#5C85BB", "#89A7D3"]
 
 # =====================================================
-# MENU LATERAL: UPLOAD COM MEMÓRIA PERSISTENTE
+# MENU LATERAL: ATUALIZAÇÃO DE BASE
 # =====================================================
-with st.sidebar.expander("⚙️ Atualizar Bases de Dados", expanded=False):
-    st.markdown("<small>Carregue novas bases aqui. Elas ficarão salvas no sistema mesmo se você atualizar a página (F5).</small>", unsafe_allow_html=True)
+with st.sidebar:
+    st.markdown("### ⚙️ Administração de Dados")
+    st.markdown("<small>Carregue os arquivos CSV/XLSX para atualizar os painéis.</small>", unsafe_allow_html=True)
     
-    up_risco = st.file_uploader("1. Gestão de Riscos", type=['csv', 'xlsx'])
-    up_churn = st.file_uploader("2. Churn/Cancelamentos", type=['csv', 'xlsx'])
+    up_risco = st.file_uploader("1. Base de Riscos", type=['csv', 'xlsx'])
+    up_churn = st.file_uploader("2. Base de Churn", type=['csv', 'xlsx'])
 
     if up_risco:
         with open("risco_temporario.csv", "wb") as f:
             f.write(up_risco.getbuffer())
-        st.success("✅ Base de Riscos salva no sistema!")
+        st.success("Base de Riscos salva!")
         
     if up_churn:
         with open("churn_temporario.csv", "wb") as f:
             f.write(up_churn.getbuffer())
-        st.success("✅ Base de Churn salva no sistema!")
+        st.success("Base de Churn salva!")
 
     st.divider()
     
-    if st.button("🗑️ Limpar Bases Salvas"):
-        if os.path.exists("risco_temporario.csv"):
-            os.remove("risco_temporario.csv")
-        if os.path.exists("churn_temporario.csv"):
-            os.remove("churn_temporario.csv")
-        st.success("Bases limpas com sucesso!")
+    if st.button("🗑️ Limpar Bases Salvas", use_container_width=True):
+        if os.path.exists("risco_temporario.csv"): os.remove("risco_temporario.csv")
+        if os.path.exists("churn_temporario.csv"): os.remove("churn_temporario.csv")
         st.rerun()
 
 # =====================================================
-# FUNÇÃO LEITURA E TRATAMENTO
+# FUNÇÃO LEITURA E TRATAMENTO (Intacta)
 # =====================================================
 def load_data():
     df_risco = pd.DataFrame()
@@ -82,9 +119,7 @@ def load_data():
     df_risco.columns = df_risco.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
     df_churn.columns = df_churn.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
 
-    # -------------------------------------------------
     # BLINDAGEM - GESTÃO DE RISCO
-    # -------------------------------------------------
     c_empresa_risco = next((c for c in df_risco.columns if 'empresa' in c.lower() or 'cliente' in c.lower()), None)
     if c_empresa_risco: df_risco.rename(columns={c_empresa_risco: 'Empresa_Standard'}, inplace=True)
     
@@ -112,9 +147,7 @@ def load_data():
     if 'Grau_Standard' in df_risco.columns:
         df_risco['Grau Numérico'] = df_risco['Grau_Standard'].astype(str).str.extract(r'(\d+)').astype(float)
 
-    # -------------------------------------------------
     # BLINDAGEM - CHURN
-    # -------------------------------------------------
     c_franquia_churn = next((c for c in df_churn.columns if 'franquia' in c.lower()), None)
     if c_franquia_churn: df_churn.rename(columns={c_franquia_churn: 'Franquia_Standard'}, inplace=True)
     
@@ -154,6 +187,9 @@ def load_data():
 
     return df_risco, df_churn
 
+def safe_pct(part, whole):
+    return (part / whole * 100) if whole > 0 else 0
+
 # =====================================================
 # EXECUÇÃO DO APP
 # =====================================================
@@ -161,22 +197,19 @@ try:
     df_risco, df_churn = load_data()
 
     if df_risco.empty or df_churn.empty:
-        st.warning("⚠️ O Dashboard está aguardando os dados.")
-        st.info("👉 **Abra o menu lateral (clicando na setinha > no canto superior esquerdo)** e arraste os seus arquivos de Excel/CSV para visualizar o painel. Eles ficarão salvos!")
+        st.info("👈 **Utilize o menu lateral para carregar suas bases de dados e iniciar o painel.**")
         st.stop()
 
     tab1, tab2 = st.tabs([
-        "⚠️ Gestão de Risco", 
-        "📉 Solicitações Entrantes Churn/Cancelamentos"
+        "GESTÃO DE RISCOS", 
+        "CHURN E CANCELAMENTOS"
     ])
 
     # =====================================================
     # ABA 1: GESTÃO DE RISCO
     # =====================================================
     with tab1:
-        st.subheader("Painel de Gestão de Risco e Reclamações")
-
-        st.markdown("##### 🔎 Filtros de Risco")
+        st.markdown("<p style='color:#5C85BB; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
         rf1, rf2, rf3, rf4 = st.columns(4)
         
         with rf1:
@@ -184,10 +217,10 @@ try:
             filtro_status_risco = st.multiselect("Status da Tratativa", status_risco_opcoes)
         with rf2:
             ano_risco_opcoes = sorted(df_risco['Ano'].unique()) if 'Ano' in df_risco.columns else []
-            filtro_ano_risco = st.multiselect("Ano do Evento", ano_risco_opcoes)
+            filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes)
         with rf3:
             mes_risco_opcoes = sorted(df_risco['Mês'].unique()) if 'Mês' in df_risco.columns else []
-            filtro_mes_risco = st.multiselect("Mês do Evento", mes_risco_opcoes)
+            filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes)
         with rf4:
             area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
             filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes)
@@ -200,38 +233,51 @@ try:
 
         st.divider()
 
+        # Cálculos Absolutos e Relativos
         total_casos = len(risco_filtrado)
+        pct_casos = safe_pct(total_casos, len(df_risco))
+        
         aging_medio = risco_filtrado['Aging_Standard'].mean() if 'Aging_Standard' in risco_filtrado.columns else 0
+        aging_medio_total = df_risco['Aging_Standard'].mean() if 'Aging_Standard' in df_risco.columns else 1
+        pct_aging = safe_pct(aging_medio, aging_medio_total)
+        
         risco_medio = risco_filtrado['Grau Numérico'].mean() if 'Grau Numérico' in risco_filtrado.columns else 0
-        try: area_critica = risco_filtrado['Area_Standard'].mode()[0] if not risco_filtrado.empty else "N/A"
-        except: area_critica = "N/A"
+        pct_risco = safe_pct(risco_medio, 5.0) # Baseado na escala máxima de 5
+        
+        try: 
+            area_critica = risco_filtrado['Area_Standard'].mode()[0] if not risco_filtrado.empty else "N/A"
+            qtd_area_critica = len(risco_filtrado[risco_filtrado['Area_Standard'] == area_critica])
+            pct_area = safe_pct(qtd_area_critica, total_casos)
+        except: 
+            area_critica = "N/A"
+            pct_area = 0
 
+        # Painéis (Absoluto e Pct)
         kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-        kpi1.metric("Total de Casos", f"{total_casos}")
-        kpi2.metric("Aging Médio (Dias)", f"{aging_medio:.1f}" if pd.notnull(aging_medio) else "0")
-        kpi3.metric("Risco Médio", f"{risco_medio:.1f}" if pd.notnull(risco_medio) else "0")
-        kpi4.metric("Área Crítica (Moda)", str(area_critica))
+        kpi1.metric("Total de Casos", f"{total_casos} ({pct_casos:.1f}%)", help="Volume Absoluto (% do Total da Base)")
+        kpi2.metric("Aging Médio (Dias)", f"{aging_medio:.1f} ({pct_aging:.1f}%)", help="Média Filtrada (% em relação a média total global)")
+        kpi3.metric("Risco Médio", f"{risco_medio:.1f} ({pct_risco:.1f}%)", help="Média Filtrada (% em relação ao teto de impacto 5)")
+        kpi4.metric("Área Crítica", f"{area_critica} ({pct_area:.1f}%)", help="Área com mais casos (% dentro do filtro atual)")
 
         st.divider()
 
         g1, g2 = st.columns([1, 2])
         with g1:
-            st.markdown("##### 🌡️ Termômetro de Risco (Médio)")
-            # AJUSTE DO MODELO: Cores vibrantes (Office) e marcador preto central
+            st.markdown("<p style='font-weight:bold;'>Termômetro de Risco Médio</p>", unsafe_allow_html=True)
             fig_gauge = go.Figure(go.Indicator(
                 mode = "gauge+number",
                 value = risco_medio if pd.notnull(risco_medio) else 0,
                 domain = {'x': [0, 1], 'y': [0, 1]},
                 gauge = {
-                    'axis': {'range': [None, 5], 'tickwidth': 1, 'tickcolor': "black"},
-                    'bar': {'color': "black", 'thickness': 0.25}, 
+                    'axis': {'range': [None, 5], 'tickwidth': 1, 'tickcolor': "#0A2342"},
+                    'bar': {'color': "#0A2342", 'thickness': 0.25}, 
                     'bgcolor': "white",
-                    'borderwidth': 2,
-                    'bordercolor': "gray",
+                    'borderwidth': 1,
+                    'bordercolor': "#E2E8F0",
                     'steps': [
-                        {'range': [0, 2], 'color': "#00B050"},   # Verde Intenso (Modelo Imagem)
-                        {'range': [2, 3.5], 'color': "#FFC000"}, # Amarelo Ouro (Modelo Imagem)
-                        {'range': [3.5, 5], 'color': "#FF0000"}  # Vermelho Vivo (Modelo Imagem)
+                        {'range': [0, 2], 'color': "#89A7D3"},
+                        {'range': [2, 3.5], 'color': "#3664A3"},
+                        {'range': [3.5, 5], 'color': "#0A2342"} 
                     ],
                 }
             ))
@@ -239,22 +285,23 @@ try:
             st.plotly_chart(fig_gauge, use_container_width=True)
 
         with g2:
-            st.markdown("##### 📊 Riscos por Área")
+            st.markdown("<p style='font-weight:bold;'>Distribuição de Casos por Área</p>", unsafe_allow_html=True)
             if 'Area_Standard' in risco_filtrado.columns:
                 df_area = risco_filtrado['Area_Standard'].value_counts().reset_index()
                 df_area.columns = ['Área', 'Quantidade']
-                # Mantém o Azul Escuro executivo na aba de risco
-                fig_bar = px.bar(df_area, x='Área', y='Quantidade', text_auto=True, color='Quantidade', color_continuous_scale=BLUE_SCALE)
-                fig_bar.update_layout(height=280, xaxis_title="", yaxis_title="Casos", showlegend=False, margin=dict(l=0, r=0, t=20, b=0))
-                st.plotly_chart(fig_bar, use_container_width=True)
+                # Trocado de barras para Rosca mantendo a paleta
+                fig_area = px.pie(df_area, values='Quantidade', names='Área', hole=0.6, color_discrete_sequence=BLUE_SCALE)
+                fig_area.update_traces(textinfo='value+percent', textposition='inside')
+                fig_area.update_layout(height=280, showlegend=True, margin=dict(l=0, r=0, t=10, b=10))
+                st.plotly_chart(fig_area, use_container_width=True)
 
-        st.markdown("##### 📋 Detalhamento dos Casos")
+        st.markdown("<p style='font-weight:bold;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
         colunas_tabela_risco = {
             'Empresa_Standard': 'Empresa',
-            'Aging_Standard': 'Dias Parados (Aging)',
+            'Aging_Standard': 'Dias Parados',
             'Area_Standard': 'Área Responsável',
-            'Grau_Standard': 'Impacto (Risco Original)',
-            'Status_Standard': 'Status (Coluna S)'
+            'Grau_Standard': 'Impacto',
+            'Status_Standard': 'Status'
         }
         cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
         df_risco_view = risco_filtrado[cols_existentes].rename(columns=colunas_tabela_risco)
@@ -262,12 +309,10 @@ try:
 
 
     # =====================================================
-    # ABA 2: SOLICITAÇÕES ENTRANTES CHURN/CANCELAMENTOS
+    # ABA 2: CHURN E CANCELAMENTOS
     # =====================================================
     with tab2:
-        st.subheader("Análise de Churn e Cancelamentos")
-
-        st.markdown("##### 🔎 Filtros de Churn")
+        st.markdown("<p style='color:#5C85BB; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
         cf1, cf2, cf3, cf4 = st.columns(4)
 
         with cf1:
@@ -296,48 +341,54 @@ try:
 
         st.divider()
 
+        # Cálculos Absolutos e Relativos Churn
         total_solicitacoes = len(churn_filtrado)
+        pct_solic = safe_pct(total_solicitacoes, len(df_churn))
+        
         total_cancelamentos = churn_filtrado['Qtd_Cancelamentos_Standard'].sum() if 'Qtd_Cancelamentos_Standard' in churn_filtrado.columns else 0
         total_revertidos = churn_filtrado['Qtd_Revertidos_Standard'].sum() if 'Qtd_Revertidos_Standard' in churn_filtrado.columns else 0
+        
+        total_contratos_filtrados = total_cancelamentos + total_revertidos
+        pct_canc = safe_pct(total_cancelamentos, total_contratos_filtrados)
+        pct_rev = safe_pct(total_revertidos, total_contratos_filtrados)
 
         kc1, kc2, kc3 = st.columns(3)
-        kc1.metric("Total de Solicitações", f"{total_solicitacoes}")
-        kc2.metric("Qtd. Contratos Cancelados", f"{total_cancelamentos:.0f}")
-        kc3.metric("Qtd. Contratos Revertidos", f"{total_revertidos:.0f}")
+        kc1.metric("Volume de Solicitações", f"{total_solicitacoes} ({pct_solic:.1f}%)", help="Total Filtrado (% vs Base Total)")
+        kc2.metric("Contratos Cancelados", f"{total_cancelamentos:.0f} ({pct_canc:.1f}%)", help="Volume Absoluto (% do Total de Contratos Solicitados)")
+        kc3.metric("Contratos Revertidos", f"{total_revertidos:.0f} ({pct_rev:.1f}%)", help="Volume Absoluto (% do Total de Contratos Solicitados)")
 
         st.divider()
 
         cg1, cg2 = st.columns(2)
         
-        # RETORNO AO ORIGINAL: Os gráficos da aba Churn voltam ao padrão que você gostava.
         with cg1:
-            st.markdown("##### 📌 Cancelamentos por Franquia")
+            st.markdown("<p style='font-weight:bold;'>Top Cancelamentos por Franquia</p>", unsafe_allow_html=True)
             if 'Franquia_Standard' in churn_filtrado.columns:
                 df_franq = churn_filtrado['Franquia_Standard'].value_counts().reset_index()
                 df_franq.columns = ['Franquia', 'Cancelamentos']
-                fig_franq = px.bar(df_franq.head(10), x='Cancelamentos', y='Franquia', orientation='h', text_auto=True, color='Cancelamentos', color_continuous_scale='Blues')
-                fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False, height=320, margin=dict(l=0, r=0, t=20, b=0))
+                fig_franq = px.bar(df_franq.head(10), x='Cancelamentos', y='Franquia', orientation='h', text_auto=True, color='Cancelamentos', color_continuous_scale=BLUE_SCALE)
+                fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False, height=320, margin=dict(l=0, r=0, t=10, b=0))
                 st.plotly_chart(fig_franq, use_container_width=True)
 
         with cg2:
-            st.markdown("##### 📌 Motivo Principal do Cancelamento")
+            st.markdown("<p style='font-weight:bold;'>Motivadores Principais</p>", unsafe_allow_html=True)
             if 'Motivo_Standard' in churn_filtrado.columns:
                 df_motivo = churn_filtrado['Motivo_Standard'].value_counts().reset_index()
                 df_motivo.columns = ['Motivo', 'Quantidade']
-                fig_motivo = px.pie(df_motivo.head(7), values='Quantidade', names='Motivo', hole=0.4)
-                fig_motivo.update_layout(height=320, margin=dict(l=0, r=0, t=20, b=0))
+                # Gráfico de Rosca implementado com paleta corporativa
+                fig_motivo = px.pie(df_motivo.head(7), values='Quantidade', names='Motivo', hole=0.6, color_discrete_sequence=BLUE_SCALE)
+                fig_motivo.update_traces(textinfo='value+percent', textposition='inside')
+                fig_motivo.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), showlegend=True)
                 st.plotly_chart(fig_motivo, use_container_width=True)
 
-        st.divider()
-
-        st.markdown("##### 🏢 Empresas com Solicitação (Detalhamento)")
+        st.markdown("<p style='font-weight:bold;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
         colunas_tabela_churn = {
-            'Grupo_Standard': 'Nome do Grupo / Empresa',
+            'Grupo_Standard': 'Empresa / Grupo',
             'CNPJ_Standard': 'CNPJ',
             'Franquia_Standard': 'Franquia',
             'Motivo_Standard': 'Motivo Principal',
-            'Qtd_Cancelamentos_Standard': 'Qtd. Cancelamentos',
-            'Qtd_Revertidos_Standard': 'Quantidade de Revertidos',
+            'Qtd_Cancelamentos_Standard': 'Cancelamentos (Qtd)',
+            'Qtd_Revertidos_Standard': 'Reversões (Qtd)',
             'Status_Standard': 'Status'
         }
         cols_existentes_churn = [c for c in colunas_tabela_churn.keys() if c in churn_filtrado.columns]
@@ -345,5 +396,5 @@ try:
         st.dataframe(df_churn_view, use_container_width=True, hide_index=True)
 
 except Exception as e:
-    st.error("Ocorreu um erro interno ao gerar os gráficos. Verifique o formato do arquivo.")
+    st.error("Erro interno ao gerar visualizações. Por favor, cheque a integridade da sua base de dados.")
     st.exception(e)
