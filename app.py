@@ -23,9 +23,9 @@ estilo_minimalista = """
     /* Fundo da aplicação claro (gelo) */
     .stApp { background-color: #F4F7FB !important; }
     
-    /* Reduzir margens superiores da página */
+    /* Ajuste de margem: Aumentado o padding-top para não cortar as abas */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 3rem !important; 
         padding-bottom: 0.5rem !important;
     }
     
@@ -35,10 +35,12 @@ estilo_minimalista = """
         color: #1E293B !important;
     }
     
-    /* Estilizar abas */
+    /* Estilizar abas - Ajuste para alinhar o texto corretamente */
     .stTabs [data-baseweb="tab-list"] { gap: 15px; }
     .stTabs [data-baseweb="tab"] {
-        height: 40px; 
+        height: auto; 
+        padding-top: 10px;
+        padding-bottom: 10px;
         white-space: pre-wrap;
         background-color: transparent;
         color: #0033A0;
