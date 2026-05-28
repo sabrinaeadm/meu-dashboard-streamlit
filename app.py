@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# Injeção de CSS: Paleta Clara, Cartões Brancos e Regras de Impressão (PDF)
+# Injeção de CSS: Paleta Clara, Cartões Brancos (Tamanho Reduzido) e PDF
 estilo_minimalista = """
 <style>
     /* Ocultar elementos nativos do Streamlit */
@@ -45,21 +45,20 @@ estilo_minimalista = """
         font-weight: 600;
     }
 
-    /* Estilo dos Cartões (Idêntico à Imagem de Referência) */
+    /* Estilo dos Cartões - AJUSTADOS PARA FICAREM MENORES E MAIS COMPACTOS */
     .kpi-card {
         background-color: #FFFFFF;
         border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        padding: 12px 16px; /* Espaçamento interno reduzido */
+        box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05); /* Sombra mais leve */
         border: 1px solid #E2E8F0;
-        height: 100%;
         display: flex;
         flex-direction: column;
         justify-content: center;
     }
-    .kpi-val { font-size: 38px; font-weight: 800; color: #0033A0; line-height: 1.1; margin-bottom: 5px; }
-    .kpi-label { font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; }
-    .kpi-sub { font-size: 12px; margin-top: 10px; font-weight: 600; }
+    .kpi-val { font-size: 28px; font-weight: 800; color: #0033A0; line-height: 1.1; margin-bottom: 2px; } /* Fonte e margem reduzidas */
+    .kpi-label { font-size: 11px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; } /* Fonte reduzida */
+    .kpi-sub { font-size: 11px; margin-top: 6px; font-weight: 600; } /* Margem e fonte reduzidas */
     
     /* Regras para exportação perfeita em PDF (Ctrl + P) */
     @media print {
@@ -108,7 +107,7 @@ with st.sidebar:
     st.info("💡 **Dica:** Para gerar o reporte, feche os filtros e aperte `Ctrl + P` para salvar como PDF limpo.")
 
 # =====================================================
-# FUNÇÃO LEITURA E TRATAMENTO (Intacta)
+# FUNÇÃO LEITURA E TRATAMENTO
 # =====================================================
 def load_data():
     df_risco = pd.DataFrame()
@@ -252,7 +251,7 @@ try:
             kr1.markdown(f'<div class="kpi-card"><div class="kpi-val">{total_casos}</div><div class="kpi-label">Total de Casos</div></div>', unsafe_allow_html=True)
             kr2.markdown(f'<div class="kpi-card"><div class="kpi-val">{aging_medio:.1f}</div><div class="kpi-label">Aging Médio (Dias)</div></div>', unsafe_allow_html=True)
             kr3.markdown(f'<div class="kpi-card"><div class="kpi-val">{risco_medio:.1f}</div><div class="kpi-label">Risco Médio</div></div>', unsafe_allow_html=True)
-            kr4.markdown(f'<div class="kpi-card"><div class="kpi-val" style="font-size:24px;">{area_critica}</div><div class="kpi-label">Área Crítica</div></div>', unsafe_allow_html=True)
+            kr4.markdown(f'<div class="kpi-card"><div class="kpi-val" style="font-size:20px;">{area_critica}</div><div class="kpi-label">Área Crítica</div></div>', unsafe_allow_html=True)
 
             st.divider()
 
@@ -357,7 +356,7 @@ try:
             <div class="kpi-card">
                 <div class="kpi-val">{total_revertidos:02.0f}</div>
                 <div class="kpi-label">CONTRATOS REVERTIDOS</div>
-                <div class="kpi-sub"><span style="background:#E0E7FF; color:#1D4ED8; padding:4px 8px; border-radius:4px;">{pct_rev:.1f}% Taxa de Reversão</span></div>
+                <div class="kpi-sub"><span style="background:#E0E7FF; color:#1D4ED8; padding:3px 6px; border-radius:4px;">{pct_rev:.1f}% Taxa de Reversão</span></div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -371,7 +370,6 @@ try:
                     df_franq = churn_filtrado['Franquia_Standard'].value_counts().reset_index()
                     df_franq.columns = ['Franquia', 'Cancelamentos']
                     fig_franq = px.bar(df_franq.head(6), x='Cancelamentos', y='Franquia', orientation='h', text_auto=True, color='Cancelamentos', color_continuous_scale=BLUE_SCALE)
-                    # Adicionado coloraxis_showscale=False para remover a barra de cores lateral
                     fig_franq.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, showlegend=False, height=220, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                     st.plotly_chart(fig_franq, use_container_width=True)
 
