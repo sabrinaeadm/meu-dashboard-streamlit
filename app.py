@@ -236,16 +236,16 @@ try:
             
             with rf1:
                 status_risco_opcoes = sorted(df_risco['Status_Standard'].dropna().unique()) if 'Status_Standard' in df_risco.columns else []
-                filtro_status_risco = st.multiselect("Status", status_risco_opcoes, placeholder="Status da Tratativa...", label_visibility="collapsed")
+                filtro_status_risco = st.multiselect("Status", status_risco_opcoes)
             with rf2:
                 ano_risco_opcoes = sorted(df_risco['Ano'].unique()) if 'Ano' in df_risco.columns else []
-                filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes, placeholder="Ano...", label_visibility="collapsed")
+                filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes)
             with rf3:
                 mes_risco_opcoes = sorted(df_risco['Mês'].unique()) if 'Mês' in df_risco.columns else []
-                filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes, placeholder="Mês...", label_visibility="collapsed")
+                filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes)
             with rf4:
                 area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
-                filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes, placeholder="Área Responsável...", label_visibility="collapsed")
+                filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes)
 
             risco_filtrado = df_risco.copy()
             if filtro_status_risco: risco_filtrado = risco_filtrado[risco_filtrado['Status_Standard'].isin(filtro_status_risco)]
@@ -327,19 +327,19 @@ try:
 
             with cf1:
                 franquias = sorted(df_churn["Franquia_Standard"].dropna().astype(str).unique()) if 'Franquia_Standard' in df_churn.columns else []
-                filtro_franquia = st.multiselect("Franquia", franquias, placeholder="Franquia...", label_visibility="collapsed")
+                filtro_franquia = st.multiselect("Franquia", franquias)
             with cf2:
                 ano_churn_opcoes = sorted(df_churn['Ano'].unique()) if 'Ano' in df_churn.columns else []
-                filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes, placeholder="Ano...", label_visibility="collapsed")
+                filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes)
             with cf3:
                 mes_churn_opcoes = sorted(df_churn['Mês'].unique()) if 'Mês' in df_churn.columns else []
-                filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes, placeholder="Mês...", label_visibility="collapsed")
+                filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes)
             with cf4:
                 status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
-                filtro_status_churn = st.multiselect("Status", status_churn, placeholder="Status...", label_visibility="collapsed")
+                filtro_status_churn = st.multiselect("Status", status_churn)
             with cf5:
                 data_churn_opcoes = sorted(df_churn["Data_Standard"].dropna().unique()) if 'Data_Standard' in df_churn.columns else []
-                filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes, placeholder="Data da Solicitação...", label_visibility="collapsed")
+                filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes)
 
             churn_filtrado = df_churn.copy()
             
