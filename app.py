@@ -46,7 +46,7 @@ estilo_minimalista = """
         font-size: 13px; 
     }
 
-    /* Estilo dos Cartões - AJUSTADOS PARA SEREM MUITO MENORES E MAIS COMPACTOS */
+    /* Estilo dos Cartões */
     .kpi-card {
         background-color: #FFFFFF;
         border-radius: 6px; 
@@ -90,7 +90,6 @@ estilo_minimalista = """
         .stTabs [data-baseweb="tab-list"] { display: none !important; }
         .stApp { background-color: #FFFFFF !important; }
         .block-container { padding: 0 !important; max-width: 100% !important; }
-        /* Ocultar barra de busca na impressão */
         div[data-testid="stTextInput"] { display: none !important; }
     }
 </style>
@@ -237,16 +236,16 @@ try:
             
             with rf1:
                 status_risco_opcoes = sorted(df_risco['Status_Standard'].dropna().unique()) if 'Status_Standard' in df_risco.columns else []
-                filtro_status_risco = st.multiselect("Status da Tratativa", status_risco_opcoes)
+                filtro_status_risco = st.multiselect("Status", status_risco_opcoes, placeholder="Status da Tratativa...", label_visibility="collapsed")
             with rf2:
                 ano_risco_opcoes = sorted(df_risco['Ano'].unique()) if 'Ano' in df_risco.columns else []
-                filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes)
+                filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes, placeholder="Ano...", label_visibility="collapsed")
             with rf3:
                 mes_risco_opcoes = sorted(df_risco['Mês'].unique()) if 'Mês' in df_risco.columns else []
-                filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes)
+                filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes, placeholder="Mês...", label_visibility="collapsed")
             with rf4:
                 area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
-                filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes)
+                filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes, placeholder="Área Responsável...", label_visibility="collapsed")
 
             risco_filtrado = df_risco.copy()
             if filtro_status_risco: risco_filtrado = risco_filtrado[risco_filtrado['Status_Standard'].isin(filtro_status_risco)]
@@ -328,19 +327,19 @@ try:
 
             with cf1:
                 franquias = sorted(df_churn["Franquia_Standard"].dropna().astype(str).unique()) if 'Franquia_Standard' in df_churn.columns else []
-                filtro_franquia = st.multiselect("Franquia", franquias)
+                filtro_franquia = st.multiselect("Franquia", franquias, placeholder="Franquia...", label_visibility="collapsed")
             with cf2:
                 ano_churn_opcoes = sorted(df_churn['Ano'].unique()) if 'Ano' in df_churn.columns else []
-                filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes)
+                filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes, placeholder="Ano...", label_visibility="collapsed")
             with cf3:
                 mes_churn_opcoes = sorted(df_churn['Mês'].unique()) if 'Mês' in df_churn.columns else []
-                filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes)
+                filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes, placeholder="Mês...", label_visibility="collapsed")
             with cf4:
                 status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
-                filtro_status_churn = st.multiselect("Status", status_churn)
+                filtro_status_churn = st.multiselect("Status", status_churn, placeholder="Status...", label_visibility="collapsed")
             with cf5:
                 data_churn_opcoes = sorted(df_churn["Data_Standard"].dropna().unique()) if 'Data_Standard' in df_churn.columns else []
-                filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes)
+                filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes, placeholder="Data da Solicitação...", label_visibility="collapsed")
 
             churn_filtrado = df_churn.copy()
             
@@ -381,7 +380,7 @@ try:
             <div class="kpi-card">
                 <div class="kpi-val">{total_revertidos:02.0f}</div>
                 <div class="kpi-label">CONTRATOS REVERTIDOS</div>
-                <div class="kpi-sub"><span style="background:#E0E7FF; color:#1D4ED8; border-radius:4px;">{pct_rev:.1f}% Taxa de Reversão</span></div>
+                <div class="kpi-sub"><span style="background:#E0E7FF; color:#1D4ED8; padding:3px 6px; border-radius:4px;">{pct_rev:.1f}% Taxa de Reversão</span></div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -408,16 +407,13 @@ try:
                     st.plotly_chart(fig_motivo, use_container_width=True)
 
             with col_dir:
-                # Topo da tabela dividido para o título e a barra de busca
                 c_topo1, c_topo2 = st.columns([1, 1])
                 with c_topo1:
                     st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; padding-top:8px;'>🗂️ Detalhe por Empresa</p>", unsafe_allow_html=True)
                 with c_topo2:
                     busca_cliente = st.text_input("Buscar Cliente", placeholder="🔍 Digite CNPJ ou Empresa...", label_visibility="collapsed")
                 
-                # Lógica da busca
                 if busca_cliente:
-                    # Filtra a tabela visual onde o CNPJ ou Nome contiverem o texto da busca
                     filtro_tabela = churn_filtrado[
                         churn_filtrado['Grupo_Standard'].astype(str).str.contains(busca_cliente, case=False, na=False) |
                         churn_filtrado['CNPJ_Standard'].astype(str).str.contains(busca_cliente, case=False, na=False)
