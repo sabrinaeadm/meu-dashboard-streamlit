@@ -238,16 +238,16 @@ try:
             
             with rf1:
                 status_risco_opcoes = sorted(df_risco['Status_Standard'].dropna().unique()) if 'Status_Standard' in df_risco.columns else []
-                filtro_status_risco = st.multiselect("Status", status_risco_opcoes)
+                filtro_status_risco = st.multiselect("Status", status_risco_opcoes, placeholder="Status da Tratativa...", label_visibility="collapsed")
             with rf2:
                 ano_risco_opcoes = sorted(df_risco['Ano'].unique()) if 'Ano' in df_risco.columns else []
-                filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes)
+                filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes, placeholder="Ano...", label_visibility="collapsed")
             with rf3:
                 mes_risco_opcoes = sorted(df_risco['Mês'].unique()) if 'Mês' in df_risco.columns else []
-                filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes)
+                filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes, placeholder="Mês...", label_visibility="collapsed")
             with rf4:
                 area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
-                filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes)
+                filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes, placeholder="Área Responsável...", label_visibility="collapsed")
 
             risco_filtrado = df_risco.copy()
             if filtro_status_risco: risco_filtrado = risco_filtrado[risco_filtrado['Status_Standard'].isin(filtro_status_risco)]
@@ -281,7 +281,9 @@ try:
 
             st.divider()
 
-            g1, g2 = st.columns([1, 2])
+            # AJUSTE DE COLUNAS AQUI: Agora as duas colunas tem tamanho igual (50/50)
+            g1, g2 = st.columns(2)
+            
             with g1:
                 st.markdown("<p style='color:#0033A0; font-weight:bold;'>Termômetro de Risco Médio</p>", unsafe_allow_html=True)
                 fig_gauge = go.Figure(go.Indicator(
@@ -297,7 +299,8 @@ try:
                         'steps': [{'range': [0, 2], 'color': "#89A7D3"}, {'range': [2, 3.5], 'color': "#3664A3"}, {'range': [3.5, 5], 'color': "#0A2342"}],
                     }
                 ))
-                fig_gauge.update_layout(height=220, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)')
+                # AJUSTE DE MARGENS: Espremendo as laterais (l=60, r=60) para o termômetro ficar menor
+                fig_gauge.update_layout(height=220, margin=dict(l=60, r=60, t=20, b=10), paper_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig_gauge, use_container_width=True)
 
             with g2:
@@ -329,19 +332,19 @@ try:
 
             with cf1:
                 franquias = sorted(df_churn["Franquia_Standard"].dropna().astype(str).unique()) if 'Franquia_Standard' in df_churn.columns else []
-                filtro_franquia = st.multiselect("Franquia", franquias)
+                filtro_franquia = st.multiselect("Franquia", franquias, placeholder="Franquia...", label_visibility="collapsed")
             with cf2:
                 ano_churn_opcoes = sorted(df_churn['Ano'].unique()) if 'Ano' in df_churn.columns else []
-                filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes)
+                filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes, placeholder="Ano...", label_visibility="collapsed")
             with cf3:
                 mes_churn_opcoes = sorted(df_churn['Mês'].unique()) if 'Mês' in df_churn.columns else []
-                filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes)
+                filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes, placeholder="Mês...", label_visibility="collapsed")
             with cf4:
                 status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
-                filtro_status_churn = st.multiselect("Status", status_churn)
+                filtro_status_churn = st.multiselect("Status", status_churn, placeholder="Status...", label_visibility="collapsed")
             with cf5:
                 data_churn_opcoes = sorted(df_churn["Data_Standard"].dropna().unique()) if 'Data_Standard' in df_churn.columns else []
-                filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes)
+                filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes, placeholder="Data da Solicitação...", label_visibility="collapsed")
 
             churn_filtrado = df_churn.copy()
             
