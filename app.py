@@ -35,7 +35,7 @@ estilo_minimalista = """
         color: #1E293B !important;
     }
     
-    /* Estilizar abas */
+    /* Estilizar abas - Ajuste para alinhar o texto corretamente */
     .stTabs [data-baseweb="tab-list"] { gap: 15px; }
     .stTabs [data-baseweb="tab"] {
         height: auto; 
@@ -288,21 +288,21 @@ try:
                 fig_gauge = go.Figure(go.Indicator(
                     mode = "gauge+number",
                     value = risco_medio if pd.notnull(risco_medio) else 0,
-                    # Adicionado number font size menor para não ficar gigante
-                    number = {'font': {'size': 40}},
+                    # Fonte do número proporcional
+                    number = {'font': {'size': 36}},
                     domain = {'x': [0, 1], 'y': [0, 1]},
                     gauge = {
                         'axis': {'range': [None, 5], 'tickwidth': 1, 'tickcolor': "#0A2342"},
-                        # Arco mais fino (thickness 0.15)
-                        'bar': {'color': "#0033A0", 'thickness': 0.15}, 
+                        # DEVOLVIDO A GROSSURA ORIGINAL PARA NÃO FICAR FINO
+                        'bar': {'color': "#0033A0", 'thickness': 0.25}, 
                         'bgcolor': "white",
                         'borderwidth': 1,
                         'bordercolor': "#E2E8F0",
                         'steps': [{'range': [0, 2], 'color': "#89A7D3"}, {'range': [2, 3.5], 'color': "#3664A3"}, {'range': [3.5, 5], 'color': "#0A2342"}],
                     }
                 ))
-                # Margens laterais ampliadas (l=90, r=90) para encolher o gráfico e altura padronizada em 200
-                fig_gauge.update_layout(height=200, margin=dict(l=90, r=90, t=20, b=10), paper_bgcolor='rgba(0,0,0,0)')
+                # ALTURA REDUZIDA PARA ESCALAR O GRÁFICO INTEIRO (sem espremer nas margens)
+                fig_gauge.update_layout(height=180, margin=dict(l=20, r=20, t=10, b=10), paper_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig_gauge, use_container_width=True)
 
             with g2:
@@ -312,8 +312,8 @@ try:
                     df_area.columns = ['Área', 'Quantidade']
                     fig_area = px.pie(df_area, values='Quantidade', names='Área', hole=0.6, color_discrete_sequence=BLUE_SCALE)
                     fig_area.update_traces(textinfo='value+percent', textposition='inside')
-                    # Altura padronizada em 200
-                    fig_area.update_layout(height=200, showlegend=True, margin=dict(l=0, r=0, t=10, b=10), paper_bgcolor='rgba(0,0,0,0)')
+                    # ALTURA IGUAL A DO TERMÔMETRO PARA FICAREM DO MESMO TAMANHO
+                    fig_area.update_layout(height=180, showlegend=True, margin=dict(l=0, r=0, t=10, b=10), paper_bgcolor='rgba(0,0,0,0)')
                     st.plotly_chart(fig_area, use_container_width=True)
 
             st.markdown("<p style='color:#0033A0; font-weight:bold;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
