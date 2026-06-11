@@ -151,16 +151,26 @@ def load_data():
     elif os.path.exists("churn.csv"):
         df_churn = pd.read_csv("churn.csv", sep=";", encoding="utf-8")
 
+    # TRATAMENTO BASE DE RISCO
     if not df_risco.empty:
         df_risco.columns = df_risco.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
         c_empresa_risco = next((c for c in df_risco.columns if 'empresa' in c.lower() or 'cliente' in c.lower()), None)
         if c_empresa_risco: df_risco.rename(columns={c_empresa_risco: 'Empresa_Standard'}, inplace=True)
+        
         c_aging_risco = next((c for c in df_risco.columns if 'dias' in c.lower() and ('aberto' in c.lower() or 'parados' in c.lower()) or 'aging' in c.lower()), None)
         if c_aging_risco: df_risco.rename(columns={c_aging_risco: 'Aging_Standard'}, inplace=True)
+        
         c_area_risco = next((c for c in df_risco.columns if 'área' in c.lower() or 'area' in c.lower()), None)
         if c_area_risco: df_risco.rename(columns={c_area_risco: 'Area_Standard'}, inplace=True)
+        
         c_grau_risco = next((c for c in df_risco.columns if 'grau' in c.lower() or 'risco' in c.lower() and 'atual' in c.lower()), None)
         if c_grau_risco: df_risco.rename(columns={c_grau_risco: 'Grau_Standard'}, inplace=True)
+        
+        # --- AJUSTE: MOTIVO RESUMIDO ---
+        c_motivo_res = next((c for c in df_risco.columns if 'motivo' in c.lower() and 'resumido' in c.lower()), None)
+        if not c_motivo_res: 
+            c_motivo_res = next((c for c in df_risco.columns if 'motivo' in c.lower()), None) # fallback
+        if c_motivo_res: df_risco.rename(columns={c_motivo_res: 'Motivo_Resumido_Standard'}, inplace=True)
         
         if 'Status' in df_risco.columns: df_risco.rename(columns={'Status': 'Status_Standard'}, inplace=True)
         else:
@@ -176,6 +186,7 @@ def load_data():
         if 'Grau_Standard' in df_risco.columns:
             df_risco['Grau Numérico'] = df_risco['Grau_Standard'].astype(str).str.extract(r'(\d+)').astype(float)
 
+    # TRATAMENTO BASE DE CHURN
     if not df_churn.empty:
         df_churn.columns = df_churn.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
         c_franquia_churn = next((c for c in df_churn.columns if 'franquia' in c.lower()), None)
@@ -233,21 +244,25 @@ try:
         if df_risco.empty:
             st.warning("⚠️ Faça o upload da base de **Gestão de Riscos** no menu lateral esquerdo para visualizar este painel.")
         else:
-            st.markdown("<p style='color:#64748B; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
-            rf1, rf2, rf3, rf4 = st.columns(4)
             
-            with rf1:
-                status_risco_opcoes = sorted(df_risco['Status_Standard'].dropna().unique()) if 'Status_Standard' in df_risco.columns else []
-                filtro_status_risco = st.multiselect("Status", status_risco_opcoes, placeholder="Status da Tratativa...", label_visibility="collapsed")
-            with rf2:
-                ano_risco_opcoes = sorted(df_risco['Ano'].unique()) if 'Ano' in df_risco.columns else []
-                filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes, placeholder="Ano...", label_visibility="collapsed")
-            with rf3:
-                mes_risco_opcoes = sorted(df_risco['Mês'].unique()) if 'Mês' in df_risco.columns else []
-                filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes, placeholder="Mês...", label_visibility="collapsed")
-            with rf4:
-                area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
-                filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes, placeholder="Área Responsável...", label_visibility="collapsed")
+            # --- AJUSTE: FILTROS DENTRO DO "PAINEL" (Container com borda) ---
+            with st.container(border=True):
+                st.markdown("<p style='color:#64748B; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
+                st.write("") # Espaçamento leve
+                rf1, rf2, rf3, rf4 = st.columns(4)
+                
+                with rf1:
+                    status_risco_opcoes = sorted(df_risco['Status_Standard'].dropna().unique()) if 'Status_Standard' in df_risco.columns else []
+                    filtro_status_risco = st.multiselect("Status", status_risco_opcoes, placeholder="Status da Tratativa...", label_visibility="collapsed")
+                with rf2:
+                    ano_risco_opcoes = sorted(df_risco['Ano'].unique()) if 'Ano' in df_risco.columns else []
+                    filtro_ano_risco = st.multiselect("Ano", ano_risco_opcoes, placeholder="Ano...", label_visibility="collapsed")
+                with rf3:
+                    mes_risco_opcoes = sorted(df_risco['Mês'].unique()) if 'Mês' in df_risco.columns else []
+                    filtro_mes_risco = st.multiselect("Mês", mes_risco_opcoes, placeholder="Mês...", label_visibility="collapsed")
+                with rf4:
+                    area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
+                    filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes, placeholder="Área Responsável...", label_visibility="collapsed")
 
             risco_filtrado = df_risco.copy()
             if filtro_status_risco: risco_filtrado = risco_filtrado[risco_filtrado['Status_Standard'].isin(filtro_status_risco)]
@@ -285,25 +300,43 @@ try:
             
             with g1:
                 st.markdown("<p style='color:#0033A0; font-weight:bold;'>Termômetro de Risco Médio</p>", unsafe_allow_html=True)
-                fig_gauge = go.Figure(go.Indicator(
-                    mode = "gauge+number",
-                    value = risco_medio if pd.notnull(risco_medio) else 0,
-                    # Fonte do número proporcional
-                    number = {'font': {'size': 36}},
-                    domain = {'x': [0, 1], 'y': [0, 1]},
-                    gauge = {
-                        'axis': {'range': [None, 5], 'tickwidth': 1, 'tickcolor': "#0A2342"},
-                        # DEVOLVIDO A GROSSURA ORIGINAL PARA NÃO FICAR FINO
-                        'bar': {'color': "#0033A0", 'thickness': 0.25}, 
-                        'bgcolor': "white",
-                        'borderwidth': 1,
-                        'bordercolor': "#E2E8F0",
-                        'steps': [{'range': [0, 2], 'color': "#89A7D3"}, {'range': [2, 3.5], 'color': "#3664A3"}, {'range': [3.5, 5], 'color': "#0A2342"}],
-                    }
-                ))
-                # ALTURA REDUZIDA PARA ESCALAR O GRÁFICO INTEIRO (sem espremer nas margens)
-                fig_gauge.update_layout(height=180, margin=dict(l=20, r=20, t=10, b=10), paper_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig_gauge, use_container_width=True)
+                
+                # --- AJUSTE: LEGENDA AO LADO DO TERMÔMETRO ---
+                col_gauge, col_leg = st.columns([3, 1])
+                
+                with col_gauge:
+                    fig_gauge = go.Figure(go.Indicator(
+                        mode = "gauge+number",
+                        value = risco_medio if pd.notnull(risco_medio) else 0,
+                        number = {'font': {'size': 36}},
+                        domain = {'x': [0, 1], 'y': [0, 1]},
+                        gauge = {
+                            'axis': {'range': [None, 5], 'tickwidth': 1, 'tickcolor': "#0A2342"},
+                            'bar': {'color': "#0033A0", 'thickness': 0.25}, 
+                            'bgcolor': "white",
+                            'borderwidth': 1,
+                            'bordercolor': "#E2E8F0",
+                            'steps': [
+                                {'range': [0, 2], 'color': "#89A7D3"}, 
+                                {'range': [2, 3.5], 'color': "#3664A3"}, 
+                                {'range': [3.5, 5], 'color': "#0A2342"}
+                            ],
+                        }
+                    ))
+                    fig_gauge.update_layout(height=180, margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor='rgba(0,0,0,0)')
+                    st.plotly_chart(fig_gauge, use_container_width=True)
+                
+                with col_leg:
+                    st.markdown("""
+                    <div style='margin-top: 35px; background-color: #F8FAFC; padding: 10px; border-radius: 6px; border: 1px solid #E2E8F0;'>
+                        <p style='font-size: 11px; font-weight: 700; color: #1E293B; margin-bottom: 5px;'>Escala:</p>
+                        <div style='font-size: 10px; color: #64748B;'>
+                            <span style='color: #0A2342; font-size: 14px;'>■</span> Alto (3.5 a 5)<br>
+                            <span style='color: #3664A3; font-size: 14px;'>■</span> Médio (2 a 3.5)<br>
+                            <span style='color: #89A7D3; font-size: 14px;'>■</span> Baixo (0 a 2)
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
             with g2:
                 st.markdown("<p style='color:#0033A0; font-weight:bold;'>Distribuição de Casos por Área</p>", unsafe_allow_html=True)
@@ -312,12 +345,21 @@ try:
                     df_area.columns = ['Área', 'Quantidade']
                     fig_area = px.pie(df_area, values='Quantidade', names='Área', hole=0.6, color_discrete_sequence=BLUE_SCALE)
                     fig_area.update_traces(textinfo='value+percent', textposition='inside')
-                    # ALTURA IGUAL A DO TERMÔMETRO PARA FICAREM DO MESMO TAMANHO
                     fig_area.update_layout(height=180, showlegend=True, margin=dict(l=0, r=0, t=10, b=10), paper_bgcolor='rgba(0,0,0,0)')
                     st.plotly_chart(fig_area, use_container_width=True)
 
             st.markdown("<p style='color:#0033A0; font-weight:bold;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
-            colunas_tabela_risco = {'Empresa_Standard': 'Empresa', 'Aging_Standard': 'Dias Parados', 'Area_Standard': 'Área Responsável', 'Grau_Standard': 'Impacto', 'Status_Standard': 'Status'}
+            
+            # --- AJUSTE: MOTIVO RESUMIDO ADICIONADO AO DETALHAMENTO ---
+            colunas_tabela_risco = {
+                'Empresa_Standard': 'Empresa', 
+                'Aging_Standard': 'Dias Parados', 
+                'Area_Standard': 'Área Responsável', 
+                'Motivo_Resumido_Standard': 'Motivo Resumido', 
+                'Grau_Standard': 'Impacto', 
+                'Status_Standard': 'Status'
+            }
+            
             cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
             df_risco_view = risco_filtrado[cols_existentes].rename(columns=colunas_tabela_risco)
             st.dataframe(df_risco_view, use_container_width=True, hide_index=True)
