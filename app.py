@@ -327,9 +327,10 @@ try:
                     st.plotly_chart(fig_gauge, use_container_width=True)
                 
                 with col_leg:
+                    # --- AJUSTE FEITO AQUI: "Escala:" alterado para "Impacto:" ---
                     st.markdown("""
                     <div style='margin-top: 35px; background-color: #F8FAFC; padding: 10px; border-radius: 6px; border: 1px solid #E2E8F0;'>
-                        <p style='font-size: 11px; font-weight: 700; color: #1E293B; margin-bottom: 5px;'>Escala:</p>
+                        <p style='font-size: 11px; font-weight: 700; color: #1E293B; margin-bottom: 5px;'>Impacto:</p>
                         <div style='font-size: 10px; color: #64748B;'>
                             <span style='color: #0A2342; font-size: 14px;'>■</span> Alto (3.5 a 5)<br>
                             <span style='color: #3664A3; font-size: 14px;'>■</span> Médio (2 a 3.5)<br>
