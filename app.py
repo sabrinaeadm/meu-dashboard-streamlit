@@ -259,7 +259,9 @@ try:
             with st.container(border=True):
                 st.markdown("<p style='color:#64748B; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
                 st.write("") 
-                rf1, rf2, rf3, rf4 = st.columns(4)
+                
+                # Movi o campo de busca da tabela para ser o quinto elemento desta linha!
+                rf1, rf2, rf3, rf4, rf5 = st.columns(5)
                 
                 with rf1:
                     status_risco_opcoes = sorted(df_risco['Status_Standard'].dropna().unique()) if 'Status_Standard' in df_risco.columns else []
@@ -273,6 +275,8 @@ try:
                 with rf4:
                     area_risco_opcoes = sorted(df_risco['Area_Standard'].dropna().astype(str).unique()) if 'Area_Standard' in df_risco.columns else []
                     filtro_area_risco = st.multiselect("Área Responsável", area_risco_opcoes, placeholder="Área Responsável...", label_visibility="collapsed")
+                with rf5:
+                    busca_risco = st.text_input("Filtrar Tabela", placeholder="🔍 Filtrar Tabela...", label_visibility="collapsed", key="busca_risco")
 
             risco_filtrado = df_risco.copy()
             if filtro_status_risco: risco_filtrado = risco_filtrado[risco_filtrado['Status_Standard'].isin(filtro_status_risco)]
@@ -357,13 +361,8 @@ try:
                     fig_area.update_layout(height=180, showlegend=True, margin=dict(l=0, r=0, t=10, b=10), paper_bgcolor='rgba(0,0,0,0)')
                     st.plotly_chart(fig_area, use_container_width=True)
 
-            # --- AJUSTE: CAMPO DE BUSCA NA TABELA DE DETALHAMENTO ---
-            c_det_1, c_det_2 = st.columns([1, 1])
-            with c_det_1:
-                st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; padding-top:8px;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
-            with c_det_2:
-                # Agora o placeholder explica que busca em toda a tabela
-                busca_risco = st.text_input("Filtrar Tabela", placeholder="🔍 Filtrar por Empresa, Status, Área, etc...", label_visibility="collapsed", key="busca_risco")
+            # Título sozinho agora, visual limpo
+            st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; padding-top:8px;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
             
             colunas_tabela_risco = {
                 'Empresa_Standard': 'Empresa', 
@@ -377,9 +376,8 @@ try:
             cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
             df_risco_view = risco_filtrado[cols_existentes].rename(columns=colunas_tabela_risco)
             
-            # --- AJUSTE FORTE: Filtra a tabela em TODAS as colunas se o usuário digitar algo ---
+            # Filtro da tabela sendo aplicado através da caixinha que está lá no topo
             if busca_risco:
-                # Procura a palavra digitada em qualquer lugar da linha (qualquer coluna)
                 mask = df_risco_view.astype(str).apply(lambda x: x.str.contains(busca_risco, case=False, na=False)).any(axis=1)
                 df_risco_view = df_risco_view[mask]
             
@@ -393,24 +391,30 @@ try:
         if df_churn.empty:
             st.warning("⚠️ Faça o upload da base de **Churn/Cancelamentos** no menu lateral esquerdo para visualizar este painel.")
         else:
-            st.markdown("<p style='color:#64748B; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
-            cf1, cf2, cf3, cf4, cf5 = st.columns(5)
+            with st.container(border=True):
+                st.markdown("<p style='color:#64748B; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
+                st.write("")
+                
+                # Movi a busca também para o topo da aba 2
+                cf1, cf2, cf3, cf4, cf5, cf6 = st.columns(6)
 
-            with cf1:
-                franquias = sorted(df_churn["Franquia_Standard"].dropna().astype(str).unique()) if 'Franquia_Standard' in df_churn.columns else []
-                filtro_franquia = st.multiselect("Franquia", franquias, placeholder="Franquia...", label_visibility="collapsed")
-            with cf2:
-                ano_churn_opcoes = sorted(df_churn['Ano'].unique()) if 'Ano' in df_churn.columns else []
-                filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes, placeholder="Ano...", label_visibility="collapsed")
-            with cf3:
-                mes_churn_opcoes = sorted(df_churn['Mês'].unique()) if 'Mês' in df_churn.columns else []
-                filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes, placeholder="Mês...", label_visibility="collapsed")
-            with cf4:
-                status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
-                filtro_status_churn = st.multiselect("Status", status_churn, placeholder="Status...", label_visibility="collapsed")
-            with cf5:
-                data_churn_opcoes = sorted(df_churn["Data_Standard"].dropna().unique()) if 'Data_Standard' in df_churn.columns else []
-                filtro_data_churn = st.multiselect("Data da Solicitação", data_churn_opcoes, placeholder="Data da Solicitação...", label_visibility="collapsed")
+                with cf1:
+                    franquias = sorted(df_churn["Franquia_Standard"].dropna().astype(str).unique()) if 'Franquia_Standard' in df_churn.columns else []
+                    filtro_franquia = st.multiselect("Franquia", franquias, placeholder="Franquia...", label_visibility="collapsed")
+                with cf2:
+                    ano_churn_opcoes = sorted(df_churn['Ano'].unique()) if 'Ano' in df_churn.columns else []
+                    filtro_ano_churn = st.multiselect("Ano", ano_churn_opcoes, placeholder="Ano...", label_visibility="collapsed")
+                with cf3:
+                    mes_churn_opcoes = sorted(df_churn['Mês'].unique()) if 'Mês' in df_churn.columns else []
+                    filtro_mes_churn = st.multiselect("Mês", mes_churn_opcoes, placeholder="Mês...", label_visibility="collapsed")
+                with cf4:
+                    status_churn = sorted(df_churn["Status_Standard"].dropna().astype(str).unique()) if 'Status_Standard' in df_churn.columns else []
+                    filtro_status_churn = st.multiselect("Status", status_churn, placeholder="Status...", label_visibility="collapsed")
+                with cf5:
+                    data_churn_opcoes = sorted(df_churn["Data_Standard"].dropna().unique()) if 'Data_Standard' in df_churn.columns else []
+                    filtro_data_churn = st.multiselect("Data Solicitação", data_churn_opcoes, placeholder="Data Solicitação...", label_visibility="collapsed")
+                with cf6:
+                    busca_cliente = st.text_input("Filtrar Tabela", placeholder="🔍 Filtrar Tabela...", label_visibility="collapsed", key="busca_churn")
 
             churn_filtrado = df_churn.copy()
             
@@ -478,19 +482,7 @@ try:
                     st.plotly_chart(fig_motivo, use_container_width=True)
 
             with col_dir:
-                c_topo1, c_topo2 = st.columns([1, 1])
-                with c_topo1:
-                    st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; padding-top:8px;'>🗂️ Detalhe por Empresa</p>", unsafe_allow_html=True)
-                with c_topo2:
-                    busca_cliente = st.text_input("Buscar Cliente", placeholder="🔍 Digite CNPJ ou Empresa...", label_visibility="collapsed")
-                
-                if busca_cliente:
-                    filtro_tabela = churn_filtrado[
-                        churn_filtrado['Grupo_Standard'].astype(str).str.contains(busca_cliente, case=False, na=False) |
-                        churn_filtrado['CNPJ_Standard'].astype(str).str.contains(busca_cliente, case=False, na=False)
-                    ]
-                else:
-                    filtro_tabela = churn_filtrado
+                st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; padding-top:8px;'>🗂️ Detalhe por Empresa</p>", unsafe_allow_html=True)
                 
                 colunas_tabela_churn = {
                     'Grupo_Standard': 'Empresa / Grupo',
@@ -501,8 +493,13 @@ try:
                     'Qtd_Revertidos_Standard': 'Reversões',
                     'Status_Standard': 'Status'
                 }
-                cols_existentes_churn = [c for c in colunas_tabela_churn.keys() if c in filtro_tabela.columns]
-                df_churn_view = filtro_tabela[cols_existentes_churn].rename(columns=colunas_tabela_churn)
+                cols_existentes_churn = [c for c in colunas_tabela_churn.keys() if c in churn_filtrado.columns]
+                df_churn_view = churn_filtrado[cols_existentes_churn].rename(columns=colunas_tabela_churn)
+                
+                # Filtro da tabela sendo aplicado através da caixinha do topo
+                if busca_cliente:
+                    mask_churn = df_churn_view.astype(str).apply(lambda x: x.str.contains(busca_cliente, case=False, na=False)).any(axis=1)
+                    df_churn_view = df_churn_view[mask_churn]
                 
                 st.dataframe(df_churn_view, use_container_width=True, hide_index=True, height=480)
 
