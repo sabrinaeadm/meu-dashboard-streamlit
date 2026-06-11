@@ -155,8 +155,18 @@ def load_data():
     if not df_risco.empty:
         df_risco.columns = df_risco.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
         
-        # --- AJUSTE: IGNORAR A PALAVRA "CARTEIRA" AO BUSCAR A EMPRESA ---
-        c_empresa_risco = next((c for c in df_risco.columns if ('empresa' in c.lower() or 'cliente' in c.lower() or 'razão' in c.lower() or 'fantasia' in c.lower() or 'nome' in c.lower()) and 'carteira' not in c.lower()), None)
+        c_empresa_risco = None
+        prioridades_empresa = ['razão social', 'razao social', 'nome fantasia', 'fantasia', 'cliente', 'nome do cliente', 'nome da empresa', 'empresa']
+        
+        for p in prioridades_empresa:
+            encontrado = next((c for c in df_risco.columns if p in c.lower() and 'carteira' not in c.lower()), None)
+            if encontrado:
+                c_empresa_risco = encontrado
+                break
+                
+        if not c_empresa_risco: 
+            c_empresa_risco = next((c for c in df_risco.columns if 'nome' in c.lower() and 'carteira' not in c.lower()), None)
+             
         if c_empresa_risco: df_risco.rename(columns={c_empresa_risco: 'Empresa_Standard'}, inplace=True)
         
         c_aging_risco = next((c for c in df_risco.columns if 'dias' in c.lower() and ('aberto' in c.lower() or 'parados' in c.lower()) or 'aging' in c.lower()), None)
@@ -168,10 +178,9 @@ def load_data():
         c_grau_risco = next((c for c in df_risco.columns if 'grau' in c.lower() or 'risco' in c.lower() and 'atual' in c.lower()), None)
         if c_grau_risco: df_risco.rename(columns={c_grau_risco: 'Grau_Standard'}, inplace=True)
         
-        # --- AJUSTE: MOTIVO RESUMIDO ---
         c_motivo_res = next((c for c in df_risco.columns if 'motivo' in c.lower() and 'resumido' in c.lower()), None)
         if not c_motivo_res: 
-            c_motivo_res = next((c for c in df_risco.columns if 'motivo' in c.lower()), None) # fallback
+            c_motivo_res = next((c for c in df_risco.columns if 'motivo' in c.lower()), None)
         if c_motivo_res: df_risco.rename(columns={c_motivo_res: 'Motivo_Resumido_Standard'}, inplace=True)
         
         if 'Status' in df_risco.columns: df_risco.rename(columns={'Status': 'Status_Standard'}, inplace=True)
@@ -249,7 +258,7 @@ try:
             
             with st.container(border=True):
                 st.markdown("<p style='color:#64748B; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
-                st.write("") # Espaçamento leve
+                st.write("") 
                 rf1, rf2, rf3, rf4 = st.columns(4)
                 
                 with rf1:
@@ -348,7 +357,12 @@ try:
                     fig_area.update_layout(height=180, showlegend=True, margin=dict(l=0, r=0, t=10, b=10), paper_bgcolor='rgba(0,0,0,0)')
                     st.plotly_chart(fig_area, use_container_width=True)
 
-            st.markdown("<p style='color:#0033A0; font-weight:bold;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
+            # --- AJUSTE: CAMPO DE BUSCA NA TABELA DE DETALHAMENTO ---
+            c_det_1, c_det_2 = st.columns([1, 1])
+            with c_det_1:
+                st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; padding-top:8px;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
+            with c_det_2:
+                busca_risco = st.text_input("Buscar Empresa", placeholder="🔍 Buscar Empresa...", label_visibility="collapsed", key="busca_risco")
             
             colunas_tabela_risco = {
                 'Empresa_Standard': 'Empresa', 
@@ -361,6 +375,12 @@ try:
             
             cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
             df_risco_view = risco_filtrado[cols_existentes].rename(columns=colunas_tabela_risco)
+            
+            # Filtra a tabela se o usuário digitar algo
+            if busca_risco:
+                if 'Empresa' in df_risco_view.columns:
+                    df_risco_view = df_risco_view[df_risco_view['Empresa'].astype(str).str.contains(busca_risco, case=False, na=False)]
+            
             st.dataframe(df_risco_view, use_container_width=True, hide_index=True)
 
 
