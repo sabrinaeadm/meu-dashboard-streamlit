@@ -154,7 +154,9 @@ def load_data():
     # TRATAMENTO BASE DE RISCO
     if not df_risco.empty:
         df_risco.columns = df_risco.columns.str.strip().str.replace("\n", "", regex=False).str.replace("\r", "", regex=False)
-        c_empresa_risco = next((c for c in df_risco.columns if 'empresa' in c.lower() or 'cliente' in c.lower()), None)
+        
+        # --- AJUSTE: IGNORAR A PALAVRA "CARTEIRA" AO BUSCAR A EMPRESA ---
+        c_empresa_risco = next((c for c in df_risco.columns if ('empresa' in c.lower() or 'cliente' in c.lower() or 'razão' in c.lower() or 'fantasia' in c.lower() or 'nome' in c.lower()) and 'carteira' not in c.lower()), None)
         if c_empresa_risco: df_risco.rename(columns={c_empresa_risco: 'Empresa_Standard'}, inplace=True)
         
         c_aging_risco = next((c for c in df_risco.columns if 'dias' in c.lower() and ('aberto' in c.lower() or 'parados' in c.lower()) or 'aging' in c.lower()), None)
@@ -245,7 +247,6 @@ try:
             st.warning("⚠️ Faça o upload da base de **Gestão de Riscos** no menu lateral esquerdo para visualizar este painel.")
         else:
             
-            # --- AJUSTE: FILTROS DENTRO DO "PAINEL" (Container com borda) ---
             with st.container(border=True):
                 st.markdown("<p style='color:#64748B; font-weight:bold; margin-bottom:-10px;'>FILTROS GLOBAIS</p>", unsafe_allow_html=True)
                 st.write("") # Espaçamento leve
@@ -301,7 +302,6 @@ try:
             with g1:
                 st.markdown("<p style='color:#0033A0; font-weight:bold;'>Termômetro de Risco Médio</p>", unsafe_allow_html=True)
                 
-                # --- AJUSTE: LEGENDA AO LADO DO TERMÔMETRO ---
                 col_gauge, col_leg = st.columns([3, 1])
                 
                 with col_gauge:
@@ -327,7 +327,6 @@ try:
                     st.plotly_chart(fig_gauge, use_container_width=True)
                 
                 with col_leg:
-                    # --- AJUSTE FEITO AQUI: "Escala:" alterado para "Impacto:" ---
                     st.markdown("""
                     <div style='margin-top: 35px; background-color: #F8FAFC; padding: 10px; border-radius: 6px; border: 1px solid #E2E8F0;'>
                         <p style='font-size: 11px; font-weight: 700; color: #1E293B; margin-bottom: 5px;'>Impacto:</p>
@@ -351,7 +350,6 @@ try:
 
             st.markdown("<p style='color:#0033A0; font-weight:bold;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
             
-            # --- AJUSTE: MOTIVO RESUMIDO ADICIONADO AO DETALHAMENTO ---
             colunas_tabela_risco = {
                 'Empresa_Standard': 'Empresa', 
                 'Aging_Standard': 'Dias Parados', 
