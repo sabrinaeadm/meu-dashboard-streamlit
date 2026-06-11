@@ -362,7 +362,8 @@ try:
             with c_det_1:
                 st.markdown("<p style='color:#0033A0; font-weight:bold; font-size:16px; padding-top:8px;'>Detalhamento Executivo</p>", unsafe_allow_html=True)
             with c_det_2:
-                busca_risco = st.text_input("Buscar Empresa", placeholder="🔍 Buscar Empresa...", label_visibility="collapsed", key="busca_risco")
+                # Agora o placeholder explica que busca em toda a tabela
+                busca_risco = st.text_input("Filtrar Tabela", placeholder="🔍 Filtrar por Empresa, Status, Área, etc...", label_visibility="collapsed", key="busca_risco")
             
             colunas_tabela_risco = {
                 'Empresa_Standard': 'Empresa', 
@@ -376,10 +377,11 @@ try:
             cols_existentes = [c for c in colunas_tabela_risco.keys() if c in risco_filtrado.columns]
             df_risco_view = risco_filtrado[cols_existentes].rename(columns=colunas_tabela_risco)
             
-            # Filtra a tabela se o usuário digitar algo
+            # --- AJUSTE FORTE: Filtra a tabela em TODAS as colunas se o usuário digitar algo ---
             if busca_risco:
-                if 'Empresa' in df_risco_view.columns:
-                    df_risco_view = df_risco_view[df_risco_view['Empresa'].astype(str).str.contains(busca_risco, case=False, na=False)]
+                # Procura a palavra digitada em qualquer lugar da linha (qualquer coluna)
+                mask = df_risco_view.astype(str).apply(lambda x: x.str.contains(busca_risco, case=False, na=False)).any(axis=1)
+                df_risco_view = df_risco_view[mask]
             
             st.dataframe(df_risco_view, use_container_width=True, hide_index=True)
 
